@@ -74,7 +74,6 @@ html, body {
   background: var(--bg);
 }
 
-/* ——— BOTTOM NAV ——— */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -115,7 +114,6 @@ html, body {
 .nav-icon { font-size: 1.25rem; line-height: 1; display: block; }
 .nav-label { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.02em; }
 
-/* Fix: bottone + centrato correttamente */
 .nav-add {
   width: 50px;
   height: 50px;
@@ -139,7 +137,6 @@ html, body {
   height: 100%;
 }
 
-/* ——— PAGE ——— */
 .page {
   min-height: 100dvh;
   padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);

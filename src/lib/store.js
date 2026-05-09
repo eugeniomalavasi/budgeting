@@ -22,21 +22,16 @@ export const currentTransactions = computed(() =>
     .sort((a, b) => new Date(b.data) - new Date(a.data))
 )
 
-// Saldo condiviso netto: positivo = l'altro ci deve, negativo = noi dobbiamo
 export const saldoCondiviso = computed(() => {
   let totale = 0
-  state.sharedExpenses
-    .filter(s => !s.settled)
-    .forEach(s => {
-      const isEu = state.profile?.name === 'Eugenio'
-      if (s.paid_by === state.user?.id) {
-        // Ho pagato io → l'altro mi deve la sua quota
-        totale += isEu ? Number(s.share_ma) : Number(s.share_eu)
-      } else {
-        // Ha pagato l'altro → io devo la mia quota
-        totale -= isEu ? Number(s.share_eu) : Number(s.share_ma)
-      }
-    })
+  state.sharedExpenses.filter(s => !s.settled).forEach(s => {
+    const isEu = state.profile?.name === 'Eugenio'
+    if (s.paid_by === state.user?.id) {
+      totale += isEu ? Number(s.share_ma) : Number(s.share_eu)
+    } else {
+      totale -= isEu ? Number(s.share_eu) : Number(s.share_ma)
+    }
+  })
   return totale
 })
 
@@ -69,14 +64,13 @@ export const CAT_EMOJI = {
 }
 
 export function fmt(v) {
-  return new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0)
+  return new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR', maximumFractionDigits:0 }).format(v || 0)
 }
 export function fmtFull(v) {
-  return new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(v||0)
+  return new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' }).format(v || 0)
 }
 
 // ——— AUTH ———
-
 export async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw error
@@ -106,27 +100,25 @@ async function loadProfile() {
     state.profile = data.find(p => p.id === state.user.id) || { id: state.user.id, name: state.user.email.split('@')[0] }
     state.otherProfile = data.find(p => p.id !== state.user.id) || null
   } else {
-    // Fallback se profiles non ancora popolato
     state.profile = { id: state.user.id, name: state.user.email.split('@')[0] }
   }
 }
 
 // ——— MONTHS ———
-
 export async function loadMonths() {
-  const { data, error } = await supabase.from('months').select('*').order('id',{ascending:true})
+  const { data, error } = await supabase.from('months').select('*').order('id', { ascending: true })
   if (error) throw error
   state.months = data
-  if (!state.currentMonthId && data.length) state.currentMonthId = data[data.length-1].id
+  if (!state.currentMonthId && data.length) state.currentMonthId = data[data.length - 1].id
 }
 
 export async function createNextMonth(label, entratePreviste, uscitePreviste) {
-  const last = state.months[state.months.length-1]
+  const last = state.months[state.months.length - 1]
   if (!last) return
   const [year, month] = last.id.split('-').map(Number)
-  const nm = month===12?1:month+1
-  const ny = month===12?year+1:year
-  const newId = `${ny}-${String(nm).padStart(2,'0')}`
+  const nm = month === 12 ? 1 : month + 1
+  const ny = month === 12 ? year + 1 : year
+  const newId = `${ny}-${String(nm).padStart(2, '0')}`
   const { data, error } = await supabase.from('months').insert({
     id: newId, label,
     saldo_iniziale: last.saldo_finale,
@@ -144,13 +136,12 @@ export async function createNextMonth(label, entratePreviste, uscitePreviste) {
 }
 
 // ——— TRANSACTIONS ———
-
 export async function loadTransactions(monthId) {
   const { data, error } = await supabase
     .from('transactions')
-    .select('*')        // rimossa join profiles che causava 400
+    .select('*')
     .eq('month_id', monthId)
-    .order('data',{ascending:false})
+    .order('data', { ascending: false })
   if (error) throw error
   state.transactions = [
     ...state.transactions.filter(t => t.month_id !== monthId),
@@ -171,6 +162,27 @@ export async function addTransaction(tx) {
   state.transactions.unshift(data)
   await _updateMonthTotals(tx.month_id, tx.importo)
   return data
+}
+
+export async function updateTransaction(id, updates) {
+  const old = state.transactions.find(t => t.id === id)
+  if (!old) return
+  const { data, error } = await supabase
+    .from('transactions')
+    .update({
+      data: updates.data,
+      importo: updates.importo,
+      descrizione: updates.descrizione,
+      categoria: updates.categoria,
+      month_id: updates.month_id,
+    })
+    .eq('id', id)
+    .select().single()
+  if (error) throw error
+  await _updateMonthTotals(old.month_id, -Number(old.importo))
+  await _updateMonthTotals(updates.month_id, Number(updates.importo))
+  const idx = state.transactions.findIndex(t => t.id === id)
+  if (idx !== -1) state.transactions[idx] = { ...old, ...data }
 }
 
 export async function deleteTransaction(id) {
@@ -201,12 +213,9 @@ async function _updateMonthTotals(monthId, deltaImporto) {
 }
 
 // ——— SHARED EXPENSES ———
-
 export async function loadSharedExpenses() {
   const { data, error } = await supabase
-    .from('shared_expenses')
-    .select('*')
-    .order('created_at',{ascending:false})
+    .from('shared_expenses').select('*').order('created_at', { ascending: false })
   if (error) throw error
   state.sharedExpenses = data
 }
@@ -214,11 +223,7 @@ export async function loadSharedExpenses() {
 export async function addSharedExpense({ transaction_id, month_id, descrizione, importo_totale, split_type, share_eu, share_ma }) {
   const { data, error } = await supabase
     .from('shared_expenses')
-    .insert({
-      transaction_id, month_id, descrizione, importo_totale,
-      paid_by: state.user?.id,
-      split_type, share_eu, share_ma, settled: false,
-    })
+    .insert({ transaction_id, month_id, descrizione, importo_totale, paid_by: state.user?.id, split_type, share_eu, share_ma, settled: false })
     .select().single()
   if (error) throw error
   state.sharedExpenses.unshift(data)
@@ -227,9 +232,7 @@ export async function addSharedExpense({ transaction_id, month_id, descrizione, 
 
 export async function settleExpense(id) {
   const { error } = await supabase
-    .from('shared_expenses')
-    .update({ settled: true, settled_at: new Date().toISOString() })
-    .eq('id', id)
+    .from('shared_expenses').update({ settled: true, settled_at: new Date().toISOString() }).eq('id', id)
   if (error) throw error
   const exp = state.sharedExpenses.find(e => e.id === id)
   if (exp) exp.settled = true
@@ -239,34 +242,7 @@ export async function settleAll() {
   const ids = state.sharedExpenses.filter(e => !e.settled).map(e => e.id)
   if (!ids.length) return
   const { error } = await supabase
-    .from('shared_expenses')
-    .update({ settled: true, settled_at: new Date().toISOString() })
-    .in('id', ids)
+    .from('shared_expenses').update({ settled: true, settled_at: new Date().toISOString() }).in('id', ids)
   if (error) throw error
   state.sharedExpenses.forEach(e => { e.settled = true })
-}
-
-export async function updateTransaction(id, updates) {
-  const old = state.transactions.find(t => t.id === id)
-  if (!old) return
-
-  const { data, error } = await supabase
-    .from('transactions')
-    .update({
-      data: updates.data,
-      importo: updates.importo,
-      descrizione: updates.descrizione,
-      categoria: updates.categoria,
-      month_id: updates.month_id,
-    })
-    .eq('id', id)
-    .select().single()
-  if (error) throw error
-
-  // Rollback vecchio importo, applica nuovo
-  await _updateMonthTotals(old.month_id, -Number(old.importo))
-  await _updateMonthTotals(updates.month_id, Number(updates.importo))
-
-  const idx = state.transactions.findIndex(t => t.id === id)
-  if (idx !== -1) state.transactions[idx] = { ...old, ...data }
 }
