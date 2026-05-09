@@ -245,3 +245,28 @@ export async function settleAll() {
   if (error) throw error
   state.sharedExpenses.forEach(e => { e.settled = true })
 }
+
+export async function updateTransaction(id, updates) {
+  const old = state.transactions.find(t => t.id === id)
+  if (!old) return
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .update({
+      data: updates.data,
+      importo: updates.importo,
+      descrizione: updates.descrizione,
+      categoria: updates.categoria,
+      month_id: updates.month_id,
+    })
+    .eq('id', id)
+    .select().single()
+  if (error) throw error
+
+  // Rollback vecchio importo, applica nuovo
+  await _updateMonthTotals(old.month_id, -Number(old.importo))
+  await _updateMonthTotals(updates.month_id, Number(updates.importo))
+
+  const idx = state.transactions.findIndex(t => t.id === id)
+  if (idx !== -1) state.transactions[idx] = { ...old, ...data }
+}
