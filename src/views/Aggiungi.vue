@@ -63,62 +63,50 @@
         <p class="split-title">Chi ha pagato e come dividere?</p>
         <div class="split-options">
 
-          <button
-            :class="['split-opt', splitMode==='eu_meta' && 'active']"
-            @click="setSplitMode('eu_meta')"
-          >
+          <button :class="['split-opt', splitMode==='io_meta' && 'active']" @click="setSplitMode('io_meta')">
             <div class="so-top">
-              <span class="so-payer">{{ nomeEu }} paga</span>
+              <span class="so-payer">{{ nomeIo }} paga</span>
               <span class="so-badge">50/50</span>
             </div>
             <div class="so-sub">Ciascuno deve metà</div>
             <div class="so-amounts" v-if="importoNum > 0">
-              <span>{{ nomeEu }} {{ fmtFull(-importoNum/2) }}</span>
+              <span>{{ nomeIo }} {{ fmtFull(-importoNum/2) }}</span>
               <span>{{ nomeAltro }} {{ fmtFull(-importoNum/2) }}</span>
             </div>
           </button>
 
-          <button
-            :class="['split-opt', splitMode==='ma_meta' && 'active']"
-            @click="setSplitMode('ma_meta')"
-          >
+          <button :class="['split-opt', splitMode==='altro_meta' && 'active']" @click="setSplitMode('altro_meta')">
             <div class="so-top">
               <span class="so-payer">{{ nomeAltro }} paga</span>
               <span class="so-badge">50/50</span>
             </div>
             <div class="so-sub">Ciascuno deve metà</div>
             <div class="so-amounts" v-if="importoNum > 0">
-              <span>{{ nomeEu }} {{ fmtFull(-importoNum/2) }}</span>
+              <span>{{ nomeIo }} {{ fmtFull(-importoNum/2) }}</span>
               <span>{{ nomeAltro }} {{ fmtFull(-importoNum/2) }}</span>
             </div>
           </button>
 
-          <button
-            :class="['split-opt', splitMode==='eu_tutto' && 'active']"
-            @click="setSplitMode('eu_tutto')"
-          >
+          <button :class="['split-opt', splitMode==='io_tutto' && 'active']" @click="setSplitMode('io_tutto')">
             <div class="so-top">
-              <span class="so-payer">{{ nomeEu }} paga</span>
+              <span class="so-payer">{{ nomeIo }} paga</span>
               <span class="so-badge so-badge-red">{{ nomeAltro }} deve tutto</span>
             </div>
-            <div class="so-sub">{{ nomeAltro }} rimborsa {{ nomeEu }}</div>
+            <div class="so-sub">{{ nomeAltro }} rimborsa {{ nomeIo }}</div>
             <div class="so-amounts" v-if="importoNum > 0">
-              <span class="pos">{{ nomeEu }} +{{ fmtFull(importoNum) }}</span>
+              <span class="pos">{{ nomeIo }} +{{ fmtFull(importoNum) }}</span>
               <span class="neg">{{ nomeAltro }} {{ fmtFull(-importoNum) }}</span>
             </div>
           </button>
 
-          <button
-            :class="['split-opt', splitMode==='ma_tutto' && 'active']"
-            @click="setSplitMode('ma_tutto')"
-          >
+          <button :class="['split-opt', splitMode==='altro_tutto' && 'active']" @click="setSplitMode('altro_tutto')">
             <div class="so-top">
               <span class="so-payer">{{ nomeAltro }} paga</span>
-              <span class="so-badge so-badge-red">{{ nomeEu }} deve tutto</span>
+              <span class="so-badge so-badge-red">{{ nomeIo }} deve tutto</span>
             </div>
-            <div class="so-sub">{{ nomeEu }} rimborsa {{ nomeAltro }}</div>
+            <div class="so-sub">{{ nomeIo }} rimborsa {{ nomeAltro }}</div>
             <div class="so-amounts" v-if="importoNum > 0">
-              <span class="neg">{{ nomeEu }} {{ fmtFull(-importoNum) }}</span>
+              <span class="neg">{{ nomeIo }} {{ fmtFull(-importoNum) }}</span>
               <span class="pos">{{ nomeAltro }} +{{ fmtFull(importoNum) }}</span>
             </div>
           </button>
@@ -156,7 +144,7 @@ const data = ref(new Date().toISOString().split('T')[0])
 const categoria = ref('')
 const meseId = ref(state.currentMonthId || '')
 const dividi = ref(false)
-const splitMode = ref('eu_meta') // eu_meta | ma_meta | eu_tutto | ma_tutto
+const splitMode = ref('io_meta') // eu_meta | ma_meta | eu_tutto | ma_tutto
 const errore = ref('')
 const saving = ref(false)
 const toastVisible = ref(false)
@@ -168,19 +156,11 @@ const keys = ['1','2','3','4','5','6','7','8','9','.','0','⌫']
 const importoNum = computed(() => parseFloat(importoRaw.value) || 0)
 const importoDisplay = computed(() => !importoRaw.value || importoRaw.value === '0' ? '0' : importoRaw.value)
 
-// Nomi fissi (non dipendono da chi è loggato)
-const nomeEu = 'Eugenio'
-const nomeAltro = computed(() => state.otherProfile?.name || 'Margherita')
-
-// UUID di Eugenio e Margherita
-const idEu = computed(() => {
-  const profiles = [state.profile, state.otherProfile].filter(Boolean)
-  return profiles.find(p => p.name === 'Eugenio')?.id || state.user?.id
-})
-const idMa = computed(() => {
-  const profiles = [state.profile, state.otherProfile].filter(Boolean)
-  return profiles.find(p => p.name === 'Margherita')?.id
-})
+// Chi sono io e chi è l'altro — funziona per entrambi gli utenti
+const nomeIo    = computed(() => state.profile?.name || 'Io')
+const nomeAltro = computed(() => state.otherProfile?.name || 'Altro')
+const idIo      = computed(() => state.user?.id)
+const idAltro   = computed(() => state.otherProfile?.id)
 
 function setSplitMode(mode) { splitMode.value = mode }
 
@@ -199,17 +179,47 @@ function normalizzaData(d) { return d ? String(d).split('T')[0] : new Date().toI
 function normalizzaImporto(v) { return String(Math.round(Math.abs(parseFloat(v)) * 100) / 100) }
 
 // Calcola share_eu, share_ma e paid_by in base alla modalità scelta
+// io_meta  = ho pagato io, dividiamo a metà
+// altro_meta = ha pagato l'altro, dividiamo a metà
+// io_tutto = ho pagato io, l'altro deve tutto
+// altro_tutto = ha pagato l'altro, io devo tutto
 function calcolaShares() {
-  const tot = importoNum.value
+  const tot  = importoNum.value
   const half = Math.round(tot / 2 * 100) / 100
   const half2 = Math.round((tot - half) * 100) / 100
+  const isEu = state.profile?.name === 'Eugenio'
 
+  // share_eu e share_ma sono sempre relativi a Eugenio/Margherita
+  // indipendentemente da chi è loggato
   switch (splitMode.value) {
-    case 'eu_meta':  return { share_eu: half, share_ma: half2, paid_by: idEu.value }
-    case 'ma_meta':  return { share_eu: half, share_ma: half2, paid_by: idMa.value }
-    case 'eu_tutto': return { share_eu: 0, share_ma: tot, paid_by: idEu.value }
-    case 'ma_tutto': return { share_eu: tot, share_ma: 0, paid_by: idMa.value }
-    default:         return { share_eu: half, share_ma: half2, paid_by: idEu.value }
+    case 'io_meta':
+      return {
+        share_eu: isEu ? half : half2,
+        share_ma: isEu ? half2 : half,
+        paid_by: idIo.value
+      }
+    case 'altro_meta':
+      return {
+        share_eu: isEu ? half : half2,
+        share_ma: isEu ? half2 : half,
+        paid_by: idAltro.value
+      }
+    case 'io_tutto':
+      // L'altro deve tutto a me
+      return {
+        share_eu: isEu ? 0 : tot,
+        share_ma: isEu ? tot : 0,
+        paid_by: idIo.value
+      }
+    case 'altro_tutto':
+      // Io devo tutto all'altro
+      return {
+        share_eu: isEu ? tot : 0,
+        share_ma: isEu ? 0 : tot,
+        paid_by: idAltro.value
+      }
+    default:
+      return { share_eu: isEu ? half : half2, share_ma: isEu ? half2 : half, paid_by: idIo.value }
   }
 }
 
