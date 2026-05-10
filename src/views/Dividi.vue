@@ -42,8 +42,10 @@
             </div>
             <div class="sr-right">
               <span class="sr-total">{{ fmtFull(s.importo_totale) }}</span>
+              <!-- Se ho pagato io: mostro quanto mi deve l'altro (+quotaAltro) -->
+              <!-- Se ha pagato l'altro: mostro quanto devo io (-quotaMia) -->
               <span class="sr-quota" :class="s.paid_by === state.user?.id ? 'pos' : 'neg'">
-                {{ s.paid_by === state.user?.id ? '+' : '-' }}{{ fmtFull(quotaAltro(s)) }}
+                {{ s.paid_by === state.user?.id ? '+' : '-' }}{{ fmtFull(s.paid_by === state.user?.id ? quotaAltro(s) : quotaMia(s)) }}
               </span>
             </div>
           </div>

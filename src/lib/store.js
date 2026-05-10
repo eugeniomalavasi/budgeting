@@ -23,13 +23,22 @@ export const currentTransactions = computed(() =>
 )
 
 export const saldoCondiviso = computed(() => {
+  // Positivo = l'altro mi deve denaro
+  // Negativo = io devo denaro all'altro
   let totale = 0
+  const isEu = state.profile?.name === 'Eugenio'
+
   state.sharedExpenses.filter(s => !s.settled).forEach(s => {
-    const isEu = state.profile?.name === 'Eugenio'
+    // Quota che spetta a me e quota che spetta all'altro
+    const quotaMia   = isEu ? Number(s.share_eu) : Number(s.share_ma)
+    const quotaAltro = isEu ? Number(s.share_ma) : Number(s.share_eu)
+
     if (s.paid_by === state.user?.id) {
-      totale += isEu ? Number(s.share_ma) : Number(s.share_eu)
+      // Ho pagato io → l'altro mi deve la sua quota
+      totale += quotaAltro
     } else {
-      totale -= isEu ? Number(s.share_eu) : Number(s.share_ma)
+      // Ha pagato l'altro → io devo a lui la mia quota
+      totale -= quotaMia
     }
   })
   return totale
