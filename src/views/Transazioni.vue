@@ -26,7 +26,7 @@
         </div>
         <div class="tx-list card" v-if="transazioniFiltrate.length">
           <div v-for="tx in transazioniFiltrate" :key="tx.id" class="tx-row" @click="selected=tx">
-            <div class="tx-emoji">{{ CAT_EMOJI[tx.categoria]||'📦' }}</div>
+            <CatIcon :categoria="tx.categoria" />
             <div class="tx-info">
               <span class="tx-desc">{{ tx.descrizione }}</span>
               <span class="tx-meta">{{ tx.categoria }} · {{ formatData(tx.data) }}</span>
@@ -43,7 +43,7 @@
       <div v-if="selected" class="sheet-overlay" @click.self="selected=null">
         <div class="sheet">
           <div class="sheet-handle"></div>
-          <div class="sheet-emoji">{{ CAT_EMOJI[selected.categoria]||'📦' }}</div>
+          <CatIcon :categoria="selected.categoria" style="width:56px;height:56px;border-radius:16px" />
           <p class="sheet-desc">{{ selected.descrizione }}</p>
           <p class="sheet-amount amount" :class="selected.importo<0?'neg':'pos'">{{ fmtFull(selected.importo) }}</p>
           <div class="sheet-details">
@@ -63,6 +63,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import CatIcon from '../components/CatIcon.vue'
 import { state, currentTransactions, loadMonths, loadTransactions, deleteTransaction, fmtFull, CAT_EMOJI, CATEGORIE_USCITE, CATEGORIE_ENTRATE } from '../lib/store.js'
 
 const router = useRouter()

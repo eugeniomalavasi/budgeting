@@ -7,7 +7,7 @@ import Aggiungi from './views/Aggiungi.vue'
 import Stats from './views/Stats.vue'
 import Login from './views/Login.vue'
 import Dividi from './views/Dividi.vue'
-import { state, initAuth } from './lib/store.js'
+import { state, initAuth, loadMonths, loadTransactions, loadSharedExpenses } from './lib/store.js'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -21,8 +21,24 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   if (to.meta.auth && !state.user) return '/login'
+})
+
+// Forza reload dati freschi ad ogni navigazione
+router.afterEach(async (to) => {
+  if (!state.user) return
+  // Ricarica sempre mesi e transazioni del mese corrente
+  if (to.meta.auth) {
+    await loadMonths()
+    if (state.currentMonthId) {
+      await loadTransactions(state.currentMonthId)
+    }
+  }
+  // Ricarica shared expenses solo sulla pagina dividi
+  if (to.path === '/dividi') {
+    await loadSharedExpenses()
+  }
 })
 
 initAuth().then(() => {

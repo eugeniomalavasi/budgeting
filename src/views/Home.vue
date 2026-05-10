@@ -55,7 +55,7 @@
         <p class="section-label">Top categorie</p>
         <div class="cat-grid">
           <div v-for="[cat, val] in topCat" :key="cat" class="cat-item card">
-            <span class="cat-emoji">{{ CAT_EMOJI[cat] || '📦' }}</span>
+            <CatIcon :categoria="cat" />
             <span class="cat-name">{{ cat }}</span>
             <span class="cat-val neg amount">{{ fmt(val) }}</span>
           </div>
@@ -65,9 +65,7 @@
         <div class="tx-list card">
           <div v-if="recentTx.length === 0" class="tx-empty">Nessuna transazione questo mese</div>
           <div v-for="tx in recentTx" :key="tx.id" class="tx-row" @click="openSheet(tx)">
-            <div class="tx-icon-wrap">
-              <span class="tx-emoji">{{ CAT_EMOJI[tx.categoria] || '📦' }}</span>
-            </div>
+            <CatIcon :categoria="tx.categoria" />
             <div class="tx-info">
               <span class="tx-desc">{{ tx.descrizione }}</span>
               <span class="tx-meta">{{ tx.categoria }} · {{ formatData(tx.data) }}</span>
@@ -84,7 +82,7 @@
       <div v-if="selected" class="sheet-overlay" @click.self="selected=null">
         <div class="sheet">
           <div class="sheet-handle"></div>
-          <div class="sheet-emoji">{{ CAT_EMOJI[selected.categoria]||'📦' }}</div>
+          <CatIcon :categoria="selected.categoria" style="width:56px;height:56px;border-radius:16px" />
           <p class="sheet-desc">{{ selected.descrizione }}</p>
           <p class="sheet-amount amount" :class="selected.importo<0?'neg':'pos'">{{ fmtFull(selected.importo) }}</p>
           <div class="sheet-details">
@@ -104,6 +102,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { state, currentMonth, currentTransactions, loadMonths, loadTransactions, fmt, fmtFull, CAT_EMOJI } from '../lib/store.js'
+import CatIcon from '../components/CatIcon.vue'
 
 const router = useRouter()
 const loading = ref(false)
