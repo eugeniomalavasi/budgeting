@@ -36,38 +36,38 @@ export const saldoCondiviso = computed(() => {
 })
 
 export const CATEGORIE_USCITE = [
-  'Alimenti', 'Animali domestici', 'Altro', 'Bollette', 'Casa',
-  'Debiti', 'Regali', 'Ristoranti', 'Salute/spese mediche',
-  'Spese personali', 'Svago', 'Trasporti', 'Vestiario', 'Viaggi'
+  'Alimenti','Animali domestici','Altro','Bollette','Casa',
+  'Debiti','Regali','Ristoranti','Salute/spese mediche',
+  'Spese personali','Svago','Trasporti','Vestiario','Viaggi'
 ]
 
 export const CATEGORIE_ENTRATE = [
-  'Busta paga', 'Bonus', 'Interessi', 'Risparmi', 'Altro'
+  'Busta paga','Bonus','Interessi','Risparmi','Altro'
 ]
 
 export const CAT_COLORS = {
-  'Alimenti': '#4ade80', 'Bollette': '#818cf8', 'Trasporti': '#fb923c',
-  'Salute/spese mediche': '#f472b6', 'Svago': '#c084fc', 'Ristoranti': '#fdba74',
-  'Regali': '#34d399', 'Vestiario': '#22d3ee', 'Casa': '#a3e635',
-  'Viaggi': '#e879f9', 'Busta paga': '#4ade80', 'Interessi': '#60a5fa',
-  'Bonus': '#facc15', 'Altro': '#94a3b8', 'Spese personali': '#64748b',
-  'Animali domestici': '#fbbf24', 'Debiti': '#f87171', 'Risparmi': '#34d399',
+  'Alimenti':'#4ade80','Bollette':'#818cf8','Trasporti':'#fb923c',
+  'Salute/spese mediche':'#f472b6','Svago':'#c084fc','Ristoranti':'#fdba74',
+  'Regali':'#34d399','Vestiario':'#22d3ee','Casa':'#a3e635',
+  'Viaggi':'#e879f9','Busta paga':'#4ade80','Interessi':'#60a5fa',
+  'Bonus':'#facc15','Altro':'#94a3b8','Spese personali':'#64748b',
+  'Animali domestici':'#fbbf24','Debiti':'#f87171','Risparmi':'#34d399',
 }
 
 export const CAT_EMOJI = {
-  'Alimenti': '🛒', 'Bollette': '💡', 'Trasporti': '🚗',
-  'Salute/spese mediche': '🏥', 'Svago': '🎮', 'Ristoranti': '🍽️',
-  'Regali': '🎁', 'Vestiario': '👗', 'Casa': '🏠',
-  'Viaggi': '✈️', 'Busta paga': '💼', 'Interessi': '📈',
-  'Bonus': '🎯', 'Altro': '📦', 'Spese personali': '👤',
-  'Animali domestici': '🐾', 'Debiti': '💸', 'Risparmi': '🏦',
+  'Alimenti':'🛒','Bollette':'💡','Trasporti':'🚗',
+  'Salute/spese mediche':'🏥','Svago':'🎮','Ristoranti':'🍽️',
+  'Regali':'🎁','Vestiario':'👗','Casa':'🏠',
+  'Viaggi':'✈️','Busta paga':'💼','Interessi':'📈',
+  'Bonus':'🎯','Altro':'📦','Spese personali':'👤',
+  'Animali domestici':'🐾','Debiti':'💸','Risparmi':'🏦',
 }
 
 export function fmt(v) {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v || 0)
+  return new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR', maximumFractionDigits:0 }).format(v || 0)
 }
 export function fmtFull(v) {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v || 0)
+  return new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' }).format(v || 0)
 }
 
 // ——— AUTH ———
@@ -80,7 +80,7 @@ export async function signIn(email, password) {
 
 export async function signOut() {
   await supabase.auth.signOut()
-  Object.assign(state, { user: null, profile: null, otherProfile: null, months: [], transactions: [], sharedExpenses: [] })
+  Object.assign(state, { user:null, profile:null, otherProfile:null, months:[], transactions:[], sharedExpenses:[] })
 }
 
 export async function initAuth() {

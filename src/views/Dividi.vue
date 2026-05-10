@@ -165,7 +165,7 @@ onMounted(async () => {
 .saldo-desc { font-size:0.85rem; color:var(--text2); }
 .saldo-amount { font-size:2rem; font-weight:700; font-family:'DM Mono',monospace; }
 
-.settle-btn { background:var(--accent); border:none; border-radius:12px; color:white; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:600; padding:0.65rem 1.25rem; transition:all 0.2s; margin-top:0.25rem; }
+.settle-btn { background:var(--accent); border:none; border-radius:12px; color:white; cursor:pointer; font-family:'Lexend',sans-serif; font-size:0.9rem; font-weight:600; padding:0.65rem 1.25rem; transition:all 0.2s; margin-top:0.25rem; }
 
 .section-label { font-size:0.78rem; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.06em; padding:0 2px; }
 
@@ -199,8 +199,8 @@ onMounted(async () => {
 .sheet-row { display:flex; justify-content:space-between; padding:0.75rem 1rem; border-bottom:1px solid var(--border); font-size:0.88rem; }
 .sheet-row:last-child { border-bottom:none; }
 .sheet-row span:first-child { color:var(--text2); }
-.settle-single-btn { width:100%; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); border-radius:14px; color:var(--green); font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600; padding:0.8rem; cursor:pointer; }
-.close-btn { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:14px; color:var(--text2); font-family:'DM Sans',sans-serif; font-size:0.95rem; padding:0.8rem; cursor:pointer; }
+.settle-single-btn { width:100%; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); border-radius:14px; color:var(--green); font-family:'Lexend',sans-serif; font-size:0.95rem; font-weight:600; padding:0.8rem; cursor:pointer; }
+.close-btn { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:14px; color:var(--text2); font-family:'Lexend',sans-serif; font-size:0.95rem; padding:0.8rem; cursor:pointer; }
 .sheet-enter-active,.sheet-leave-active { transition:all 0.25s ease; }
 .sheet-enter-from .sheet,.sheet-leave-to .sheet { transform:translateY(100%); }
 .sheet-enter-from,.sheet-leave-to { opacity:0; }

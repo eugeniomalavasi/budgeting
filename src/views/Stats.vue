@@ -186,9 +186,9 @@ const saldoData = computed(() => ({
   datasets: [{
     label: 'Saldo',
     data: months.value.map(m => m.saldo_finale),
-    borderColor: '#6c63ff',
-    backgroundColor: 'rgba(108,99,255,0.15)',
-    fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#6c63ff',
+    borderColor: 'var(--accent)',
+    backgroundColor: 'rgba(245,166,35,0.1)',
+    fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: 'var(--accent)',
   }]
 }))
 
@@ -219,7 +219,7 @@ const catData = computed(() => ({
 const baseOpts = {
   responsive: true,
   plugins: {
-    legend: { labels: { color:'#8891b0', font:{ family:'DM Sans', size:11 } } },
+    legend: { labels: { color:'#8891b0', font:{ family:'Lexend', size:11 } } },
     tooltip: { callbacks: { label: ctx => ` €${Number(ctx.raw).toLocaleString('it-IT')}` } }
   },
   scales: {
@@ -232,7 +232,7 @@ const barOpts = { ...baseOpts }
 const doughnutOpts = {
   responsive: true,
   plugins: {
-    legend: { position:'bottom', labels:{ color:'#8891b0', font:{ family:'DM Sans', size:11 }, padding:12, boxWidth:12 } },
+    legend: { position:'bottom', labels:{ color:'#8891b0', font:{ family:'Lexend', size:11 }, padding:12, boxWidth:12 } },
     tooltip: { callbacks: { label: ctx => ` ${ctx.label}: €${Number(ctx.raw).toLocaleString('it-IT')}` } }
   }
 }
@@ -264,7 +264,7 @@ onMounted(async () => {
 .chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem; }
 .chart-title { font-size:0.78rem; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.05em; }
 .chart-tabs { display:flex; gap:4px; }
-.chart-tab { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text2); cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.75rem; padding:0.25rem 0.6rem; transition:all 0.2s; }
+.chart-tab { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text2); cursor:pointer; font-family:'Lexend',sans-serif; font-size:0.75rem; padding:0.25rem 0.6rem; transition:all 0.2s; }
 .chart-tab.active { background:var(--accent); border-color:var(--accent); color:white; }
 
 /* Month table */
@@ -284,8 +284,8 @@ onMounted(async () => {
   cursor:pointer;
   transition:background 0.15s;
 }
-.mt-row:active { background:rgba(108,99,255,0.1); }
-.mt-row.expanded { background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.2); }
+.mt-row:active { background:rgba(245,166,35,0.08); }
+.mt-row.expanded { background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.12); }
 
 .mt-main {
   display:grid; grid-template-columns:1fr 1fr 1fr 1fr;

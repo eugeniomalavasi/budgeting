@@ -121,12 +121,12 @@ onMounted(async () => {
 .tx-title { font-size:1.3rem; font-weight:700; }
 .search-wrap { position:relative; }
 .search-icon { position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); font-size:0.9rem; }
-.search-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.9rem; padding:0.6rem 0.85rem 0.6rem 2.4rem; outline:none; }
+.search-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:'Lexend',sans-serif; font-size:0.9rem; padding:0.6rem 0.85rem 0.6rem 2.4rem; outline:none; }
 .search-input:focus { border-color:var(--accent); }
 .filter-row { display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; }
-.filter-chip { background:transparent; border:1px solid var(--border); border-radius:100px; color:var(--text2); cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.8rem; padding:0.3rem 0.8rem; transition:all 0.2s; }
+.filter-chip { background:transparent; border:1px solid var(--border); border-radius:100px; color:var(--text2); cursor:pointer; font-family:'Lexend',sans-serif; font-size:0.8rem; padding:0.3rem 0.8rem; transition:all 0.2s; }
 .filter-chip.active { background:var(--accent); border-color:var(--accent); color:white; }
-.filter-select { background:var(--surface2); border:1px solid var(--border); border-radius:100px; color:var(--text2); font-family:'DM Sans',sans-serif; font-size:0.8rem; padding:0.3rem 0.8rem; outline:none; }
+.filter-select { background:var(--surface2); border:1px solid var(--border); border-radius:100px; color:var(--text2); font-family:'Lexend',sans-serif; font-size:0.8rem; padding:0.3rem 0.8rem; outline:none; }
 .px { padding:1rem 1.25rem; display:flex; flex-direction:column; gap:0.85rem; }
 .summary-row { display:flex; justify-content:space-between; align-items:center; padding:0 2px; }
 .summary-count { font-size:0.8rem; color:var(--text2); }
@@ -156,9 +156,9 @@ onMounted(async () => {
 .sheet-row { display:flex; justify-content:space-between; padding:0.75rem 1rem; border-bottom:1px solid var(--border); font-size:0.88rem; }
 .sheet-row:last-child { border-bottom:none; }
 .sheet-row span:first-child { color:var(--text2); }
-.edit-btn { width:100%; background:rgba(108,99,255,0.15); border:1px solid rgba(108,99,255,0.3); border-radius:14px; color:var(--accent); font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600; padding:0.8rem; cursor:pointer; }
-.delete-btn { width:100%; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); border-radius:14px; color:var(--red); font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600; padding:0.8rem; cursor:pointer; }
-.close-btn { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:14px; color:var(--text2); font-family:'DM Sans',sans-serif; font-size:0.95rem; padding:0.8rem; cursor:pointer; }
+.edit-btn { width:100%; background:rgba(245,166,35,0.1); border:1px solid rgba(108,99,255,0.3); border-radius:14px; color:var(--accent); font-family:'Lexend',sans-serif; font-size:0.95rem; font-weight:600; padding:0.8rem; cursor:pointer; }
+.delete-btn { width:100%; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); border-radius:14px; color:var(--red); font-family:'Lexend',sans-serif; font-size:0.95rem; font-weight:600; padding:0.8rem; cursor:pointer; }
+.close-btn { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:14px; color:var(--text2); font-family:'Lexend',sans-serif; font-size:0.95rem; padding:0.8rem; cursor:pointer; }
 .sheet-enter-active,.sheet-leave-active { transition:all 0.25s ease; }
 .sheet-enter-from .sheet,.sheet-leave-to .sheet { transform:translateY(100%); }
 .sheet-enter-from,.sheet-leave-to { opacity:0; }
