@@ -131,6 +131,7 @@
             </div>
           </div>
 
+          <button class="edit-mov-btn" @click="modificaMovimento(selected)">✏️ Modifica movimento</button>
           <button class="save-split-btn" @click="salvaSuddivisione" :disabled="savingSplit">
             {{ savingSplit ? 'Salvataggio...' : '💾 Salva suddivisione' }}
           </button>
@@ -146,11 +147,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   state, saldoCondiviso, loadSharedExpenses, settleExpense, settleAll,
   updateSharedExpense, fmtFull
 } from '../lib/store.js'
 
+const router = useRouter()
 const selected = ref(null)
 const editSplitMode = ref('eu_meta')
 const savingSplit = ref(false)
@@ -223,6 +226,11 @@ async function salvaSuddivisione() {
     })
     selected.value = { ...selected.value, split_type: editSplitMode.value, share_eu, share_ma, paid_by }
   } finally { savingSplit.value = false }
+}
+
+function modificaMovimento(s) {
+  selected.value = null
+  router.push({ path: '/aggiungi', query: { edit: s.transaction_id } })
 }
 
 async function pareggia() { await settleAll() }
@@ -564,6 +572,19 @@ onMounted(async () => { await loadSharedExpenses() })
 
 .neg {
   color: var(--red);
+}
+
+.edit-mov-btn {
+  width: 100%;
+  background: rgba(245, 166, 35, 0.1);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-radius: 14px;
+  color: var(--accent);
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.8rem;
+  cursor: pointer;
 }
 
 .save-split-btn {
