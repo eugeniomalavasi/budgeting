@@ -70,8 +70,8 @@
             </div>
             <div class="so-sub">Ciascuno deve metà</div>
             <div class="so-amounts" v-if="importoNum > 0">
-              <span>{{ nomeIo }} {{ fmtFull(-previewShares.io) }}</span>
-              <span>{{ nomeAltro }} {{ fmtFull(-previewShares.altro) }}</span>
+              <span>{{ nomeIo }} {{ fmtFull(-previewShares('io_meta').io) }}</span>
+              <span>{{ nomeAltro }} {{ fmtFull(-previewShares('io_meta').altro) }}</span>
             </div>
           </button>
 
@@ -82,8 +82,8 @@
             </div>
             <div class="so-sub">Ciascuno deve metà</div>
             <div class="so-amounts" v-if="importoNum > 0">
-              <span>{{ nomeIo }} {{ fmtFull(-previewShares.io) }}</span>
-              <span>{{ nomeAltro }} {{ fmtFull(-previewShares.altro) }}</span>
+              <span>{{ nomeIo }} {{ fmtFull(-previewShares('altro_meta').io) }}</span>
+              <span>{{ nomeAltro }} {{ fmtFull(-previewShares('altro_meta').altro) }}</span>
             </div>
           </button>
 
@@ -94,8 +94,8 @@
             </div>
             <div class="so-sub">{{ nomeAltro }} rimborsa {{ nomeIo }}</div>
             <div class="so-amounts" v-if="importoNum > 0">
-              <span class="pos">{{ nomeIo }} +{{ fmtFull(previewShares.altro) }}</span>
-              <span class="neg">{{ nomeAltro }} {{ fmtFull(-previewShares.altro) }}</span>
+              <span class="pos">{{ nomeIo }} +{{ fmtFull(previewShares('io_tutto').altro) }}</span>
+              <span class="neg">{{ nomeAltro }} {{ fmtFull(-previewShares('io_tutto').altro) }}</span>
             </div>
           </button>
 
@@ -106,8 +106,8 @@
             </div>
             <div class="so-sub">{{ nomeIo }} rimborsa {{ nomeAltro }}</div>
             <div class="so-amounts" v-if="importoNum > 0">
-              <span class="neg">{{ nomeIo }} {{ fmtFull(-previewShares.io) }}</span>
-              <span class="pos">{{ nomeAltro }} +{{ fmtFull(previewShares.altro) }}</span>
+              <span class="neg">{{ nomeIo }} {{ fmtFull(-previewShares('altro_tutto').io) }}</span>
+              <span class="pos">{{ nomeAltro }} +{{ fmtFull(previewShares('altro_tutto').io) }}</span>
             </div>
           </button>
 
@@ -120,6 +120,7 @@
         {{ saving ? 'Salvataggio...' : editMode ? 'Aggiorna' : 'Salva' }}
       </button>
       <button v-if="editMode" class="cancel-btn" @click="annulla">Annulla</button>
+      <button v-if="editMode" class="delete-btn" @click="elimina">🗑 Elimina movimento</button>
     </div>
 
     <transition name="toast">
@@ -132,7 +133,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  state, addTransaction, updateTransaction, addSharedExpense, updateSharedExpense, deleteSharedExpense,
+  state, addTransaction, updateTransaction, deleteTransaction, addSharedExpense, updateSharedExpense, deleteSharedExpense,
   loadMonths, loadSharedExpenses, CATEGORIE_USCITE, CATEGORIE_ENTRATE, CAT_EMOJI, fmtFull
 } from '../lib/store.js'
 
@@ -170,19 +171,20 @@ function setSplitMode(mode) {
   // Ricalcola quote con importo attuale
 }
 
-// Ricalcola quote mostrate in anteprima (reactive all'importo)
-const previewShares = computed(() => {
+// Ricalcola quote mostrate in anteprima — accetta il mode della card specifica,
+// così ogni opzione mostra sempre i valori corretti indipendentemente da splitMode attivo
+function previewShares(mode) {
   const tot = importoNum.value
   const half = Math.round(tot / 2 * 100) / 100
   const half2 = Math.round((tot - half) * 100) / 100
-  switch (splitMode.value) {
+  switch (mode) {
     case 'io_meta': return { io: half, altro: half2 }
     case 'altro_meta': return { io: half, altro: half2 }
     case 'io_tutto': return { io: 0, altro: tot }
     case 'altro_tutto': return { io: tot, altro: 0 }
     default: return { io: half, altro: half2 }
   }
-})
+}
 
 function keyPress(k) {
   if (k === '⌫') { importoRaw.value = importoRaw.value.length <= 1 ? '0' : importoRaw.value.slice(0, -1); return }
@@ -191,6 +193,18 @@ function keyPress(k) {
   const dec = importoRaw.value.split('.')[1]
   if (dec && dec.length >= 2) return
   importoRaw.value += k
+}
+
+async function elimina() {
+  if (!editId.value) return
+  if (!confirm(`Eliminare "${descrizione.value}"?`)) return
+  try {
+    if (editSharedId.value) await deleteSharedExpense(editId.value)
+    await deleteTransaction(editId.value)
+    router.back()
+  } catch (e) {
+    errore.value = 'Errore eliminazione: ' + e.message
+  }
 }
 
 function annulla() { router.back() }
@@ -655,6 +669,18 @@ onMounted(async () => {
   cursor: pointer;
   font-family: 'Lexend', sans-serif;
   font-size: 0.95rem;
+  padding: 0.85rem;
+}
+
+.delete-btn {
+  background: rgba(255, 95, 87, 0.1);
+  border: 1px solid rgba(255, 95, 87, 0.3);
+  border-radius: 16px;
+  color: var(--red);
+  cursor: pointer;
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
   padding: 0.85rem;
 }
 

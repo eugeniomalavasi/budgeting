@@ -41,7 +41,7 @@
               <span class="sr-total">{{ fmtFull(s.importo_totale) }}</span>
               <span class="sr-quota" :class="s.paid_by === state.user?.id ? 'pos' : 'neg'">
                 {{ s.paid_by === state.user?.id ? '+' : '−' }}{{ fmtFull(s.paid_by === state.user?.id ? quotaAltro(s) :
-                quotaMia(s)) }}
+                  quotaMia(s)) }}
               </span>
             </div>
           </div>
@@ -95,19 +95,21 @@
           <div class="edit-split-section">
             <p class="edit-split-title">Modifica suddivisione</p>
             <div class="split-options">
-              <button :class="['split-opt', editSplitMode === 'eu_meta' && 'active']" @click="setEditSplitMode('eu_meta')">
+              <button :class="['split-opt', editSplitMode === 'eu_meta' && 'active']"
+                @click="setEditSplitMode('eu_meta')">
                 <div class="so-top"><span class="so-payer">Eugenio paga</span><span class="so-badge">50/50</span></div>
                 <div class="so-amounts" v-if="selected?.importo_totale">
-                  <span>Eu {{ fmtFull(-selected.importo_totale / 2) }}</span>
-                  <span>{{ nomeAltro }} {{ fmtFull(-selected.importo_totale / 2) }}</span>
+                  <span>Eu {{ fmtFull(-previewShares('eu_meta').eu) }}</span>
+                  <span>{{ nomeAltro }} {{ fmtFull(-previewShares('eu_meta').ma) }}</span>
                 </div>
               </button>
-              <button :class="['split-opt', editSplitMode === 'ma_meta' && 'active']" @click="setEditSplitMode('ma_meta')">
+              <button :class="['split-opt', editSplitMode === 'ma_meta' && 'active']"
+                @click="setEditSplitMode('ma_meta')">
                 <div class="so-top"><span class="so-payer">{{ nomeAltro }} paga</span><span
                     class="so-badge">50/50</span></div>
                 <div class="so-amounts" v-if="selected?.importo_totale">
-                  <span>Eu {{ fmtFull(-selected.importo_totale / 2) }}</span>
-                  <span>{{ nomeAltro }} {{ fmtFull(-selected.importo_totale / 2) }}</span>
+                  <span>Eu {{ fmtFull(-previewShares('ma_meta').eu) }}</span>
+                  <span>{{ nomeAltro }} {{ fmtFull(-previewShares('ma_meta').ma) }}</span>
                 </div>
               </button>
               <button :class="['split-opt', editSplitMode === 'eu_tutto' && 'active']"
@@ -115,8 +117,8 @@
                 <div class="so-top"><span class="so-payer">Eugenio paga</span><span class="so-badge so-badge-red">{{
                     nomeAltro }} deve tutto</span></div>
                 <div class="so-amounts" v-if="selected?.importo_totale">
-                  <span class="pos">Eu +{{ fmtFull(selected.importo_totale) }}</span>
-                  <span class="neg">{{ nomeAltro }} {{ fmtFull(-selected.importo_totale) }}</span>
+                  <span class="pos">Eu +{{ fmtFull(previewShares('eu_tutto').eu) }}</span>
+                  <span class="neg">{{ nomeAltro }} {{ fmtFull(-previewShares('eu_tutto').ma) }}</span>
                 </div>
               </button>
               <button :class="['split-opt', editSplitMode === 'ma_tutto' && 'active']"
@@ -124,8 +126,8 @@
                 <div class="so-top"><span class="so-payer">{{ nomeAltro }} paga</span><span
                     class="so-badge so-badge-red">Eugenio deve tutto</span></div>
                 <div class="so-amounts" v-if="selected?.importo_totale">
-                  <span class="neg">Eu {{ fmtFull(-selected.importo_totale) }}</span>
-                  <span class="pos">{{ nomeAltro }} +{{ fmtFull(selected.importo_totale) }}</span>
+                  <span class="neg">Eu {{ fmtFull(-previewShares('ma_tutto').eu) }}</span>
+                  <span class="pos">{{ nomeAltro }} +{{ fmtFull(previewShares('ma_tutto').ma) }}</span>
                 </div>
               </button>
             </div>
@@ -138,6 +140,7 @@
           <button v-if="!selected.settled" class="settle-single-btn" @click="pareggiaSingolo(selected)">
             ✓ Segna come saldato
           </button>
+          <button class="delete-btn" @click="eliminaMovimento(selected)">🗑 Elimina movimento</button>
           <button class="close-btn" @click="selected = null">Chiudi</button>
         </div>
       </div>
@@ -150,7 +153,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   state, saldoCondiviso, loadSharedExpenses, settleExpense, settleAll,
-  updateSharedExpense, fmtFull
+  updateSharedExpense, deleteSharedExpense, deleteTransaction, fmtFull
 } from '../lib/store.js'
 
 const router = useRouter()
@@ -201,6 +204,32 @@ function apriSheet(s) {
 }
 
 function setEditSplitMode(mode) { editSplitMode.value = mode }
+
+// Computed reactive: dipende da selected, si ricalcola automaticamente quando cambia
+const allPreviews = computed(() => {
+  const tot = selected.value?.importo_totale || 0
+  const half = Math.round(tot / 2 * 100) / 100
+  const half2 = Math.round((tot - half) * 100) / 100
+  return {
+    eu_meta: { eu: half, ma: half2 },
+    ma_meta: { eu: half, ma: half2 },
+    eu_tutto: { eu: tot, ma: tot },
+    ma_tutto: { eu: tot, ma: tot },
+  }
+})
+function previewShares(mode) { return allPreviews.value[mode] || allPreviews.value.eu_meta }
+
+async function eliminaMovimento(s) {
+  if (!confirm(`Eliminare "${s.descrizione}"?`)) return
+  try {
+    // Elimina prima la shared expense, poi la transazione
+    await deleteSharedExpense(s.transaction_id)
+    await deleteTransaction(s.transaction_id)
+    selected.value = null
+  } catch (e) {
+    alert('Errore eliminazione: ' + e.message)
+  }
+}
 
 function calcolaSharesEdit() {
   const tot = selected.value?.importo_totale || 0
@@ -610,6 +639,19 @@ onMounted(async () => { await loadSharedExpenses() })
   border: 1px solid rgba(48, 209, 88, 0.3);
   border-radius: 14px;
   color: var(--green);
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.8rem;
+  cursor: pointer;
+}
+
+.delete-btn {
+  width: 100%;
+  background: rgba(255, 95, 87, 0.1);
+  border: 1px solid rgba(255, 95, 87, 0.3);
+  border-radius: 14px;
+  color: var(--red);
   font-family: 'Lexend', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
