@@ -114,11 +114,56 @@ async function loadProfile() {
 }
 
 // ——— MONTHS ———
+const MESI_IT = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+
 export async function loadMonths() {
   const { data, error } = await supabase.from('months').select('*').order('id', { ascending: true })
   if (error) throw error
   state.months = data
-  if (!state.currentMonthId && data.length) state.currentMonthId = data[data.length - 1].id
+  if (!data.length) return
+
+  // Calcola l'ID del mese REALE di oggi (es. "2026-06")
+  const now = new Date()
+  const todayId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  const exists = data.find(m => m.id === todayId)
+  if (exists) {
+    // Il mese corrente è già nel DB → selezionalo
+    state.currentMonthId = todayId
+  } else if (data[data.length - 1].id < todayId) {
+    // Siamo avanti rispetto all'ultimo mese nel DB → crea tutti i mesi mancanti
+    await _createMonthsUpTo(todayId)
+  } else {
+    // Caso improbabile: il DB ha mesi futuri → usa l'ultimo disponibile
+    if (!state.currentMonthId) state.currentMonthId = data[data.length - 1].id
+  }
+}
+
+// Crea in sequenza tutti i mesi mancanti fino a targetId (incluso)
+async function _createMonthsUpTo(targetId) {
+  while (state.months[state.months.length - 1].id < targetId) {
+    const last = state.months[state.months.length - 1]
+    const [year, month] = last.id.split('-').map(Number)
+    const nm = month === 12 ? 1 : month + 1
+    const ny = month === 12 ? year + 1 : year
+    const newId = `${ny}-${String(nm).padStart(2, '0')}`
+    const label = `${MESI_IT[nm - 1]} ${ny}`
+    const { data, error } = await supabase.from('months').insert({
+      id: newId, label,
+      saldo_iniziale: last.saldo_finale,
+      saldo_finale: last.saldo_finale,
+      risparmiati: 0,
+      // Eredita i budget previsti dall'ultimo mese
+      entrate_previste: last.entrate_previste,
+      entrate_effettive: 0,
+      uscite_previste: last.uscite_previste,
+      uscite_effettive: 0,
+    }).select()
+    if (error) throw error
+    state.months.push(data[0])
+  }
+  state.currentMonthId = targetId
 }
 
 export async function createNextMonth(label, entratePreviste, uscitePreviste) {
@@ -128,7 +173,6 @@ export async function createNextMonth(label, entratePreviste, uscitePreviste) {
   const nm = month === 12 ? 1 : month + 1
   const ny = month === 12 ? year + 1 : year
   const newId = `${ny}-${String(nm).padStart(2, '0')}`
-  // Insert senza .single() per evitare PGRST116
   const { data, error } = await supabase.from('months').insert({
     id: newId, label,
     saldo_iniziale: last.saldo_finale,
