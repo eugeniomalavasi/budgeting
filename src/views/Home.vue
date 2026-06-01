@@ -13,7 +13,7 @@
       </div>
 
       <div class="month-scroll">
-        <button v-for="m in state.months" :key="m.id" class="month-chip"
+        <button v-for="m in [...state.months].reverse()" :key="m.id" class="month-chip"
           :class="{ active: state.currentMonthId === m.id }" @click="selectMonth(m.id)">{{ m.label.split(' ')[0]
           }}</button>
       </div>
@@ -48,7 +48,7 @@
           <div class="savings-bottom">
             <span>Risparmiati</span>
             <span class="amount" :class="currentMonth.risparmiati >= 0 ? 'pos' : 'neg'">{{ fmt(currentMonth.risparmiati)
-              }}</span>
+            }}</span>
           </div>
         </div>
 
@@ -84,12 +84,13 @@
           <div class="sheet-handle"></div>
           <CatIcon :categoria="selected.categoria" style="width:56px;height:56px;border-radius:16px" />
           <p class="sheet-desc">{{ selected.descrizione }}</p>
-          <p class="sheet-amount amount" :class="selected.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(selected.importo) }}</p>
+          <p class="sheet-amount amount" :class="selected.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(selected.importo) }}
+          </p>
           <div class="sheet-details">
             <div class="sheet-row"><span>Categoria</span><span>{{ selected.categoria }}</span></div>
             <div class="sheet-row"><span>Data</span><span>{{ formatData(selected.data) }}</span></div>
             <div class="sheet-row"><span>Mese</span><span>{{state.months.find(m => m.id === selected.month_id)?.label
-                }}</span>
+            }}</span>
             </div>
           </div>
           <button class="edit-btn" @click="modifica(selected)">✏️ Modifica</button>

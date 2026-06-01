@@ -14,11 +14,11 @@
         <button v-if="search" class="search-clear" @click="search = ''; scopoTutti = false">✕</button>
       </div>
 
-      <!-- Toggle mese / tutti -->
+      <!-- Toggle mese specifico / tutti -->
       <div class="scope-row">
-        <button :class="['scope-btn', !scopoTutti && 'active']" @click="setScopoMese">
-          {{ meseLabel }}
-        </button>
+        <select v-model="filtroMeseId" :class="['mese-select', !scopoTutti && 'attivo']" @change="onMeseChange">
+          <option v-for="m in mesiDesc" :key="m.id" :value="m.id">{{ m.label }}</option>
+        </select>
         <button :class="['scope-btn', scopoTutti && 'active']" @click="setScopoTutti">
           Tutti i mesi
         </button>
@@ -107,7 +107,11 @@ const search = ref('')
 const filtroTipo = ref('')
 const filtroCategoria = ref('')
 const selected = ref(null)
-const scopoTutti = ref(false) // false = solo mese corrente, true = tutti
+const scopoTutti = ref(false)
+const filtroMeseId = ref(state.currentMonthId)
+
+// Sincronizza filtroMeseId se currentMonthId cambia (es. primo avvio)
+watch(() => state.currentMonthId, (id) => { if (id && !filtroMeseId.value) filtroMeseId.value = id })
 
 const filtri = [
   { val: '', label: 'Tutti' },
@@ -117,10 +121,8 @@ const filtri = [
 
 const categorie = computed(() => [...CATEGORIE_USCITE, ...CATEGORIE_ENTRATE].sort())
 
-const meseLabel = computed(() => {
-  const m = state.months.find(m => m.id === state.currentMonthId)
-  return m?.label?.split(' ')[0] || 'Mese corrente'
-})
+// Mesi in ordine decrescente (più recente prima)
+const mesiDesc = computed(() => [...state.months].reverse())
 
 // Tutte le transazioni caricate (tutti i mesi)
 const tutteLeTransazioni = computed(() =>
@@ -128,8 +130,12 @@ const tutteLeTransazioni = computed(() =>
 )
 
 // Sorgente dati in base allo scopo
-const txMeseCorrente = computed(() => state.transactions.filter(t => t.month_id === state.currentMonthId).sort((a, b) => new Date(b.data) - new Date(a.data)))
-const sorgente = computed(() => scopoTutti.value || search.value ? tutteLeTransazioni.value : txMeseCorrente.value)
+const txMeseFiltrato = computed(() =>
+  state.transactions
+    .filter(t => t.month_id === filtroMeseId.value)
+    .sort((a, b) => new Date(b.data) - new Date(a.data))
+)
+const sorgente = computed(() => scopoTutti.value || search.value ? tutteLeTransazioni.value : txMeseFiltrato.value)
 
 const transazioniFiltrate = computed(() => {
   let list = sorgente.value
@@ -146,11 +152,7 @@ const transazioniFiltrate = computed(() => {
 // Raggruppa per mese quando si è in vista "tutti"
 const transazioniGruppate = computed(() => {
   const list = transazioniFiltrate.value
-  if (!scopoTutti.value && !search.value) {
-    // Vista mese: nessun raggruppamento
-    return { '': list }
-  }
-  // Vista tutti: raggruppa per label mese
+  if (!scopoTutti.value && !search.value) return { '': list }
   const gruppi = {}
   list.forEach(tx => {
     const mese = state.months.find(m => m.id === tx.month_id)?.label || tx.month_id
@@ -168,7 +170,6 @@ function formatData(d) {
 
 async function setScopoTutti() {
   scopoTutti.value = true
-  // Carica tutti i mesi non ancora caricati
   loading.value = true
   for (const m of state.months) {
     if (!state.transactions.find(t => t.month_id === m.id)) {
@@ -178,9 +179,15 @@ async function setScopoTutti() {
   loading.value = false
 }
 
-function setScopoMese() {
+async function onMeseChange() {
   scopoTutti.value = false
   search.value = ''
+  // Carica le transazioni del mese selezionato se non già in memoria
+  if (!state.transactions.find(t => t.month_id === filtroMeseId.value)) {
+    loading.value = true
+    await loadTransactions(filtroMeseId.value)
+    loading.value = false
+  }
 }
 
 // Se l'utente scrive nella search, carica automaticamente tutti i mesi
@@ -278,6 +285,32 @@ onMounted(async () => {
 .scope-row {
   display: flex;
   gap: 0.4rem;
+  align-items: center;
+}
+
+.mese-select {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.85rem;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+/* Evidenziato quando non si è in modalità "tutti i mesi" */
+.mese-select.attivo {
+  background: var(--surface2);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .scope-btn {

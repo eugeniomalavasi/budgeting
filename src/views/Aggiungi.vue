@@ -48,7 +48,7 @@
           <span class="field-icon">🗓</span>
           <select v-model="meseId" class="field-input field-select">
             <option disabled value="">Mese...</option>
-            <option v-for="m in state.months" :key="m.id" :value="m.id">{{ m.label }}</option>
+            <option v-for="m in [...state.months].reverse()" :key="m.id" :value="m.id">{{ m.label }}</option>
           </select>
         </div>
       </div>
@@ -130,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   state, addTransaction, updateTransaction, deleteTransaction, addSharedExpense, updateSharedExpense, deleteSharedExpense,
@@ -155,6 +155,13 @@ const editMode = ref(false)
 const editId = ref(null)
 const editSharedId = ref(null) // ID shared expense esistente in modifica
 
+// Quando cambia la data, aggiorna automaticamente il mese corrispondente
+watch(data, (newData) => {
+  if (!newData) return
+  const monthId = newData.substring(0, 7) // "2026-05-27" → "2026-05"
+  if (state.months.find(m => m.id === monthId)) meseId.value = monthId
+})
+
 const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫']
 
 const importoNum = computed(() => parseFloat(importoRaw.value) || 0)
@@ -171,20 +178,21 @@ function setSplitMode(mode) {
   // Ricalcola quote con importo attuale
 }
 
-// Ricalcola quote mostrate in anteprima — accetta il mode della card specifica,
-// così ogni opzione mostra sempre i valori corretti indipendentemente da splitMode attivo
-function previewShares(mode) {
+// Computed reactive: calcola le quote per TUTTE e 4 le modalità in una volta sola.
+// Così Vue sa che dipende da importoNum e rirenderizza tutto quando cambia.
+const allPreviews = computed(() => {
   const tot = importoNum.value
   const half = Math.round(tot / 2 * 100) / 100
   const half2 = Math.round((tot - half) * 100) / 100
-  switch (mode) {
-    case 'io_meta': return { io: half, altro: half2 }
-    case 'altro_meta': return { io: half, altro: half2 }
-    case 'io_tutto': return { io: 0, altro: tot }
-    case 'altro_tutto': return { io: tot, altro: 0 }
-    default: return { io: half, altro: half2 }
+  return {
+    io_meta: { io: half, altro: half2 },
+    altro_meta: { io: half, altro: half2 },
+    io_tutto: { io: 0, altro: tot },
+    altro_tutto: { io: tot, altro: 0 },
   }
-}
+})
+// Shorthand usato nel template
+function previewShares(mode) { return allPreviews.value[mode] || allPreviews.value.io_meta }
 
 function keyPress(k) {
   if (k === '⌫') { importoRaw.value = importoRaw.value.length <= 1 ? '0' : importoRaw.value.slice(0, -1); return }
