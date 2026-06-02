@@ -1,0 +1,45 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a1a1a"/>
+      <stop offset="1" stop-color="#0d0d0d"/>
+    </linearGradient>
+    <linearGradient id="oL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc266"/>
+      <stop offset="1" stop-color="#f5a623"/>
+    </linearGradient>
+    <linearGradient id="oM" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5a623"/>
+      <stop offset="1" stop-color="#e07e18"/>
+    </linearGradient>
+    <linearGradient id="oD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e07e18"/>
+      <stop offset="1" stop-color="#bc5d0e"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="114" fill="url(#bg)"/>
+
+  <!-- ===== Geometric tangram fox ===== -->
+  <!-- Left ear -->
+  <polygon points="140,128 232,180 168,238" fill="url(#oM)"/>
+  <polygon points="140,128 168,238 158,196" fill="url(#oD)"/>
+  <!-- Right ear -->
+  <polygon points="372,128 280,180 344,238" fill="url(#oL)"/>
+  <polygon points="372,128 344,238 354,196" fill="url(#oM)"/>
+
+  <!-- Forehead / top of head (two big triangles meeting at center top) -->
+  <polygon points="168,238 256,196 256,316" fill="url(#oM)"/>
+  <polygon points="344,238 256,196 256,316" fill="url(#oL)"/>
+
+  <!-- Side cheeks -->
+  <polygon points="168,238 256,316 198,344" fill="url(#oD)"/>
+  <polygon points="344,238 256,316 314,344" fill="url(#oM)"/>
+
+  <!-- Snout tapering down to nose -->
+  <polygon points="198,344 256,316 256,408" fill="url(#oM)"/>
+  <polygon points="314,344 256,316 256,408" fill="url(#oD)"/>
+
+  <!-- Nose -->
+  <polygon points="226,372 286,372 256,410" fill="#161616"/>
+</svg>
