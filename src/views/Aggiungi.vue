@@ -265,6 +265,16 @@ function calcolaShares() {
   }
 }
 
+// Rete di sicurezza: se una richiesta a Supabase resta "appesa" (es. problemi
+// di rete), dopo 15s sblocchiamo comunque il pulsante invece di lasciarlo
+// bloccato finché l'utente non forza un refresh della pagina.
+function withTimeout(promise, ms = 15000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Richiesta scaduta, riprova.')), ms))
+  ])
+}
+
 async function salva() {
   errore.value = ''
   const importo = importoNum.value
@@ -275,63 +285,67 @@ async function salva() {
 
   saving.value = true
   try {
-    const importoFinal = tipo.value === 'uscita' ? -importo : importo
-
-    if (editMode.value) {
-      await updateTransaction(editId.value, {
-        data: data.value, importo: importoFinal,
-        descrizione: descrizione.value.trim(),
-        categoria: categoria.value, month_id: meseId.value,
-      })
-      // Aggiorna o crea shared expense
-      if (dividi.value && tipo.value === 'uscita') {
-        const { share_eu, share_ma, paid_by } = calcolaShares()
-        if (editSharedId.value) {
-          // Aggiorna quella esistente
-          await updateSharedExpense(editSharedId.value, {
-            split_type: splitMode.value, share_eu, share_ma,
-            importo_totale: importo, paid_by,
-          })
-        } else {
-          // Crea nuova shared expense per questo movimento
-          await addSharedExpense({
-            transaction_id: editId.value, month_id: meseId.value,
-            descrizione: descrizione.value.trim(), importo_totale: importo,
-            split_type: splitMode.value, share_eu, share_ma, paid_by,
-          })
-        }
-      } else if (!dividi.value && editSharedId.value) {
-        // Rimuovi shared expense se l'utente ha tolto la spunta
-        const { deleteSharedExpense } = await import('../lib/store.js')
-        await deleteSharedExpense(editId.value)
-        editSharedId.value = null
-      }
-    } else {
-      const tx = await addTransaction({
-        month_id: meseId.value, data: data.value,
-        importo: importoFinal, descrizione: descrizione.value.trim(), categoria: categoria.value,
-      })
-      if (dividi.value) {
-        const { share_eu, share_ma, paid_by } = calcolaShares()
-        await addSharedExpense({
-          transaction_id: tx.id, month_id: meseId.value,
-          descrizione: descrizione.value.trim(), importo_totale: importo,
-          split_type: splitMode.value, share_eu, share_ma, paid_by,
-        })
-      }
-    }
-
-    toastVisible.value = true
-    setTimeout(() => { toastVisible.value = false; if (editMode.value) router.back() }, 1200)
-
-    if (!editMode.value) {
-      importoRaw.value = '0'; descrizione.value = ''
-      categoria.value = ''; dividi.value = false; splitMode.value = 'eu_meta'
-    }
+    await withTimeout(salvaInterno())
   } catch (e) {
     errore.value = 'Errore: ' + e.message
   } finally {
     saving.value = false
+  }
+}
+
+async function salvaInterno() {
+  const importo = importoNum.value
+  const importoFinal = tipo.value === 'uscita' ? -importo : importo
+
+  if (editMode.value) {
+    await updateTransaction(editId.value, {
+      data: data.value, importo: importoFinal,
+      descrizione: descrizione.value.trim(),
+      categoria: categoria.value, month_id: meseId.value,
+    })
+    // Aggiorna o crea shared expense
+    if (dividi.value && tipo.value === 'uscita') {
+      const { share_eu, share_ma, paid_by } = calcolaShares()
+      if (editSharedId.value) {
+        // Aggiorna quella esistente
+        await updateSharedExpense(editSharedId.value, {
+          split_type: splitMode.value, share_eu, share_ma,
+          importo_totale: importo, paid_by,
+        })
+      } else {
+        // Crea nuova shared expense per questo movimento
+        await addSharedExpense({
+          transaction_id: editId.value, month_id: meseId.value,
+          descrizione: descrizione.value.trim(), importo_totale: importo,
+          split_type: splitMode.value, share_eu, share_ma, paid_by,
+        })
+      }
+    } else if (!dividi.value && editSharedId.value) {
+      // Rimuovi shared expense se l'utente ha tolto la spunta
+      await deleteSharedExpense(editId.value)
+      editSharedId.value = null
+    }
+  } else {
+    const tx = await addTransaction({
+      month_id: meseId.value, data: data.value,
+      importo: importoFinal, descrizione: descrizione.value.trim(), categoria: categoria.value,
+    })
+    if (dividi.value) {
+      const { share_eu, share_ma, paid_by } = calcolaShares()
+      await addSharedExpense({
+        transaction_id: tx.id, month_id: meseId.value,
+        descrizione: descrizione.value.trim(), importo_totale: importo,
+        split_type: splitMode.value, share_eu, share_ma, paid_by,
+      })
+    }
+  }
+
+  toastVisible.value = true
+  setTimeout(() => { toastVisible.value = false; if (editMode.value) router.back() }, 1200)
+
+  if (!editMode.value) {
+    importoRaw.value = '0'; descrizione.value = ''
+    categoria.value = ''; dividi.value = false; splitMode.value = 'eu_meta'
   }
 }
 

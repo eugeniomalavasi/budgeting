@@ -20,6 +20,25 @@
     </div>
 
     <div class="px">
+      <!-- Riepilogo condiviso: sempre in cima, prima cosa visibile -->
+      <router-link to="/dividi" class="split-summary card" :class="saldoCondiviso >= 0 ? 'card-green' : 'card-red'">
+        <span class="split-summary-icon">{{ saldoCondiviso >= 0 ? '🎉' : '😅' }}</span>
+        <div class="split-summary-text">
+          <template v-if="saldoCondiviso > 0.01">
+            <span class="split-summary-nome">{{ nomeAltro }}</span> ti deve
+            <span class="split-summary-amount pos amount">{{ fmtFull(saldoCondiviso) }}</span>
+          </template>
+          <template v-else-if="saldoCondiviso < -0.01">
+            Devi a <span class="split-summary-nome">{{ nomeAltro }}</span>
+            <span class="split-summary-amount neg amount">{{ fmtFull(Math.abs(saldoCondiviso)) }}</span>
+          </template>
+          <template v-else>
+            Siete in pari con {{ nomeAltro }} 🤝
+          </template>
+        </div>
+        <span class="split-summary-arrow">›</span>
+      </router-link>
+
       <div v-if="loading" class="skeleton-card"></div>
       <template v-else-if="currentMonth">
 
@@ -48,7 +67,7 @@
           <div class="savings-bottom">
             <span>Risparmiati</span>
             <span class="amount" :class="currentMonth.risparmiati >= 0 ? 'pos' : 'neg'">{{ fmt(currentMonth.risparmiati)
-            }}</span>
+              }}</span>
           </div>
         </div>
 
@@ -90,7 +109,7 @@
             <div class="sheet-row"><span>Categoria</span><span>{{ selected.categoria }}</span></div>
             <div class="sheet-row"><span>Data</span><span>{{ formatData(selected.data) }}</span></div>
             <div class="sheet-row"><span>Mese</span><span>{{state.months.find(m => m.id === selected.month_id)?.label
-            }}</span>
+                }}</span>
             </div>
           </div>
           <button class="edit-btn" @click="modifica(selected)">✏️ Modifica</button>
@@ -104,7 +123,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { state, currentMonth, currentTransactions, loadMonths, loadTransactions, fmt, fmtFull, CAT_EMOJI } from '../lib/store.js'
+import { state, currentMonth, currentTransactions, saldoCondiviso, loadMonths, loadTransactions, loadSharedExpenses, fmt, fmtFull, CAT_EMOJI } from '../lib/store.js'
 import CatIcon from '../components/CatIcon.vue'
 
 const router = useRouter()
@@ -114,6 +133,10 @@ const selected = ref(null)
 // Mostra solo il nome dal profilo, non l'email completa
 const userName = computed(() => state.profile?.name || state.user?.email?.split('@')[0] || 'tu')
 const today = computed(() => new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }))
+
+// Riepilogo "Dividi" da mostrare in cima
+const nomeAltro = computed(() => state.otherProfile?.name || 'Margherita')
+const unsettledCount = computed(() => state.sharedExpenses.filter(s => !s.settled).length)
 
 const savePercent = computed(() => {
   const ent = currentMonth.value?.entrate_effettive
@@ -153,6 +176,7 @@ async function selectMonth(id) {
 onMounted(async () => {
   if (!state.months.length) await loadMonths()
   if (state.currentMonthId) await caricaMese(state.currentMonthId)
+  if (!state.sharedExpenses.length) await loadSharedExpenses()
 })
 
 if (typeof document !== 'undefined') {
@@ -260,6 +284,61 @@ watch(() => state.currentMonthId, async (newId) => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.split-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.15s;
+}
+
+.split-summary:active {
+  transform: scale(0.98);
+}
+
+.split-summary.card-green {
+  border-color: rgba(48, 209, 88, 0.3);
+  background: linear-gradient(135deg, rgba(48, 209, 88, 0.08), var(--surface));
+}
+
+.split-summary.card-red {
+  border-color: rgba(255, 95, 87, 0.3);
+  background: linear-gradient(135deg, rgba(255, 95, 87, 0.08), var(--surface));
+}
+
+.split-summary-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.split-summary-text {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.split-summary-nome {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.split-summary-amount {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.split-summary-arrow {
+  font-size: 1.4rem;
+  color: var(--text2);
+  flex-shrink: 0;
 }
 
 .skeleton-card {
