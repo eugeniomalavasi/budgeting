@@ -26,7 +26,7 @@
       <!-- Link "vero" (non router-link): forza un refresh completo della pagina
            prima di aprire /aggiungi, così resetta cache/lock/stato in memoria
            che a volte bloccavano il salvataggio del movimento. -->
-      <a href="/aggiungi" class="nav-item nav-add" @click.prevent="apriAggiungi">
+      <a href="/#/aggiungi" class="nav-item nav-add" @click.prevent="apriAggiungi">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
           class="nav-add-svg">
           <path d="M12 5v14M5 12h14" />
@@ -60,11 +60,17 @@ import { state } from './lib/store.js'
 const route = useRoute()
 const isLogin = computed(() => route.path === '/login')
 
-// Refresh forzato: window.location.assign fa una navigazione completa del
-// browser (ricarica davvero il documento), a differenza di router.push che
-// resta dentro la SPA. Così ogni volta che premi "+" riparti da pagina pulita.
+// Refresh forzato prima di aprire "Aggiungi".
+// Il router è in hash mode (createWebHashHistory), quindi la rotta sta dopo
+// il "#": l'URL corretto è "/#/aggiungi". Impostiamo l'hash e poi forziamo un
+// reload vero del documento, così ripartiamo da pagina pulita (niente cache/
+// lock/stato in memoria che a volte bloccavano il salvataggio).
 function apriAggiungi() {
-  window.location.assign('/aggiungi')
+  const target = window.location.origin + '/#/aggiungi'
+  if (window.location.href !== target) {
+    window.location.href = target
+  }
+  window.location.reload()
 }
 </script>
 
