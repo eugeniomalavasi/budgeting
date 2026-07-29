@@ -8,22 +8,44 @@
 
     <nav class="bottom-nav" v-if="state.user && !isLogin">
       <router-link to="/" class="nav-item">
-        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+          <path d="M9 21V12h6v9" />
+        </svg>
         <span class="nav-label">Home</span>
       </router-link>
       <router-link to="/transazioni" class="nav-item">
-        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg>
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M7 9h10M7 13h6" />
+        </svg>
         <span class="nav-label">Movimenti</span>
       </router-link>
-      <router-link to="/aggiungi" class="nav-item nav-add">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="nav-add-svg"><path d="M12 5v14M5 12h14"/></svg>
-      </router-link>
+      <!-- Link "vero" (non router-link): forza un refresh completo della pagina
+           prima di aprire /aggiungi, così resetta cache/lock/stato in memoria
+           che a volte bloccavano il salvataggio del movimento. -->
+      <a href="/aggiungi" class="nav-item nav-add" @click.prevent="apriAggiungi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          class="nav-add-svg">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </a>
       <router-link to="/dividi" class="nav-item">
-        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="15" cy="7" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6h6c3.3 0 6 2.7 6 6"/></svg>
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="7" r="3" />
+          <circle cx="15" cy="7" r="3" />
+          <path d="M3 20c0-3.3 2.7-6 6-6h6c3.3 0 6 2.7 6 6" />
+        </svg>
         <span class="nav-label">Dividi</span>
       </router-link>
       <router-link to="/stats" class="nav-item">
-        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M7 20V10M12 20V4M17 20v-7"/></svg>
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18M7 20V10M12 20V4M17 20v-7" />
+        </svg>
         <span class="nav-label">Grafici</span>
       </router-link>
     </nav>
@@ -37,6 +59,13 @@ import { state } from './lib/store.js'
 
 const route = useRoute()
 const isLogin = computed(() => route.path === '/login')
+
+// Refresh forzato: window.location.assign fa una navigazione completa del
+// browser (ricarica davvero il documento), a differenza di router.push che
+// resta dentro la SPA. Così ogni volta che premi "+" riparti da pagina pulita.
+function apriAggiungi() {
+  window.location.assign('/aggiungi')
+}
 </script>
 
 <style>
@@ -46,21 +75,27 @@ const isLogin = computed(() => route.path === '/login')
   --bg: #0e0e0e;
   --surface: #181818;
   --surface2: #222222;
-  --border: rgba(255,255,255,0.08);
+  --border: rgba(255, 255, 255, 0.08);
   --text: #f5f0e8;
   --text2: #8a8070;
   --accent: #f5a623;
   --accent2: #ff7c2a;
-  --accent-glow: rgba(245,166,35,0.25);
+  --accent-glow: rgba(245, 166, 35, 0.25);
   --red: #ff5f57;
   --green: #30d158;
   --nav-h: 72px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
 
-html, body {
+html,
+body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Lexend', sans-serif;
@@ -69,7 +104,9 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-#app { height: 100%; }
+#app {
+  height: 100%;
+}
 
 .shell {
   max-width: 480px;
@@ -88,7 +125,7 @@ html, body {
   width: 100%;
   max-width: 480px;
   height: calc(var(--nav-h) + var(--safe-bottom));
-  background: rgba(24,24,24,0.95);
+  background: rgba(24, 24, 24, 0.95);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -121,10 +158,19 @@ html, body {
   display: block;
 }
 
-.nav-item.router-link-active { color: var(--accent); }
-.nav-item:active { opacity: 0.6; }
+.nav-item.router-link-active {
+  color: var(--accent);
+}
 
-.nav-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.03em; }
+.nav-item:active {
+  opacity: 0.6;
+}
+
+.nav-label {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
 
 .nav-add {
   width: 52px;
@@ -155,14 +201,39 @@ html, body {
   border: 1px solid var(--border);
 }
 
-.amount { font-family: 'DM Mono', monospace; font-weight: 500; }
-.amount.neg { color: var(--red); }
-.amount.pos { color: var(--green); }
+.amount {
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+}
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.12s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.amount.neg {
+  color: var(--red);
+}
 
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.amount.pos {
+  color: var(--green);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.12s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
 </style>
