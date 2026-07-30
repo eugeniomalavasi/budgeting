@@ -4,13 +4,28 @@ import { supabase } from './supabase.js'
 export const state = reactive({
   user: null,
   profile: null,
-  otherProfile: null,
+  otherProfile: null,   // deprecato: "l'altro" quando il gruppo ha esattamente 2 membri
+  members: [],          // membri del gruppo attivo: [{ id, name }]
+  groups: [],           // gruppi dell'utente: [{ household_id, name, role }]
+  activeGroupId: null,  // = profiles.household_id (gruppo attualmente visualizzato)
   months: [],
   transactions: [],
-  sharedExpenses: [],
+  sharedExpenses: [],   // ogni spesa ha .shares = [{ user_id, amount }]
   currentMonthId: null,
   loading: false,
 })
+
+// Quota di un membro in una spesa (0 se non partecipa).
+export function shareOf(expense, userId) {
+  const s = expense?.shares?.find(x => x.user_id === userId)
+  return s ? Number(s.amount) : 0
+}
+
+// Nome di un membro dato il suo id.
+export function memberName(userId) {
+  if (userId === state.user?.id) return state.profile?.name || 'Tu'
+  return state.members.find(m => m.id === userId)?.name || '—'
+}
 
 export const currentMonth = computed(() =>
   state.months.find(m => m.id === state.currentMonthId) || state.months[state.months.length - 1]
@@ -22,26 +37,38 @@ export const currentTransactions = computed(() =>
     .sort((a, b) => new Date(b.data) - new Date(a.data))
 )
 
+// Saldo netto dell'utente corrente verso il gruppo.
+// Positivo = gli altri mi devono; Negativo = io devo agli altri.
 export const saldoCondiviso = computed(() => {
-  // Positivo = l'altro mi deve denaro
-  // Negativo = io devo denaro all'altro
+  const me = state.user?.id
   let totale = 0
-  const isEu = state.profile?.name === 'Eugenio'
-
   state.sharedExpenses.filter(s => !s.settled).forEach(s => {
-    // Quota che spetta a me e quota che spetta all'altro
-    const quotaMia = isEu ? Number(s.share_eu) : Number(s.share_ma)
-    const quotaAltro = isEu ? Number(s.share_ma) : Number(s.share_eu)
-
-    if (s.paid_by === state.user?.id) {
-      // Ho pagato io → l'altro mi deve la sua quota
-      totale += quotaAltro
+    const myShare = shareOf(s, me)
+    if (s.paid_by === me) {
+      // Ho anticipato tutto: gli altri mi devono la loro quota (totale − mia quota)
+      totale += Number(s.importo_totale) - myShare
     } else {
-      // Ha pagato l'altro → io devo a lui la mia quota
-      totale -= quotaMia
+      // Ha pagato un altro: io devo la mia quota
+      totale -= myShare
     }
   })
   return totale
+})
+
+// Saldo netto di OGNI membro del gruppo (per la vista Dividi a N persone).
+// net[userId] > 0 → il gruppo gli deve; < 0 → lui deve al gruppo.
+export const memberBalances = computed(() => {
+  const net = {}
+  state.members.forEach(m => { net[m.id] = 0 })
+  state.sharedExpenses.filter(s => !s.settled).forEach(s => {
+    if (net[s.paid_by] === undefined) net[s.paid_by] = 0
+    net[s.paid_by] += Number(s.importo_totale)  // il pagatore ha anticipato il totale
+    ;(s.shares || []).forEach(sh => {
+      if (net[sh.user_id] === undefined) net[sh.user_id] = 0
+      net[sh.user_id] -= Number(sh.amount)       // ognuno deve la sua quota
+    })
+  })
+  return net
 })
 
 export const CATEGORIE_USCITE = [
@@ -156,7 +183,55 @@ export async function updateProfileName(name) {
 
 export async function signOut() {
   await supabase.auth.signOut()
-  Object.assign(state, { user: null, profile: null, otherProfile: null, months: [], transactions: [], sharedExpenses: [] })
+  Object.assign(state, {
+    user: null, profile: null, otherProfile: null,
+    members: [], groups: [], activeGroupId: null,
+    months: [], transactions: [], sharedExpenses: [],
+  })
+}
+
+// ——— GRUPPI ———
+// Tutti i gruppi di cui l'utente fa parte.
+export async function loadGroups() {
+  if (!state.user) return
+  const { data, error } = await supabase
+    .from('group_members')
+    .select('household_id, role, households(name)')
+    .eq('user_id', state.user.id)
+  if (error) throw error
+  state.groups = (data || []).map(g => ({
+    household_id: g.household_id,
+    role: g.role,
+    name: g.households?.name || 'Gruppo',
+  }))
+}
+
+// Cambia il gruppo attivo (aggiorna profiles.household_id) e ricarica tutto.
+export async function switchGroup(householdId) {
+  if (!state.user || householdId === state.activeGroupId) return
+  const { error } = await supabase
+    .from('profiles').update({ household_id: householdId }).eq('id', state.user.id)
+  if (error) throw error
+  state.activeGroupId = householdId
+  state.currentMonthId = null
+  await loadProfile()
+  await loadMonths()
+  if (state.currentMonthId) await loadTransactions(state.currentMonthId)
+  await loadSharedExpenses()
+}
+
+// Crea un nuovo gruppo, iscrive l'utente come owner e lo rende attivo.
+export async function createGroup(name) {
+  if (!state.user) return
+  const { data: hh, error: e1 } = await supabase
+    .from('households').insert({ name: name || 'Nuovo gruppo' }).select()
+  if (e1) throw e1
+  const householdId = hh[0].id
+  const { error: e2 } = await supabase
+    .from('group_members').insert({ household_id: householdId, user_id: state.user.id, role: 'owner' })
+  if (e2) throw e2
+  await switchGroup(householdId)
+  return householdId
 }
 
 // true durante il flusso di recupero password: la UI deve mandare
@@ -177,6 +252,7 @@ export async function initAuth() {
 
 async function loadProfile() {
   if (!state.user) return
+  // Le RLS restituiscono solo i profili del gruppo attivo → sono i membri.
   const { data } = await supabase.from('profiles').select('*')
   const mine = data?.find(p => p.id === state.user.id)
   if (mine) {
@@ -189,8 +265,13 @@ async function loadProfile() {
       .from('profiles').upsert({ id: state.user.id, name }).select()
     state.profile = created?.[0] || { id: state.user.id, name }
   }
-  // "L'altro" profilo dell'household (modello a 2 persone, resta per ora)
-  state.otherProfile = data?.find(p => p.id !== state.user.id) || null
+  state.activeGroupId = state.profile?.household_id || null
+  // Membri del gruppo attivo (include me stesso)
+  state.members = (data || []).map(p => ({ id: p.id, name: p.name }))
+  // Compat 2 persone: "l'altro" ha senso solo se il gruppo è una coppia
+  const others = (data || []).filter(p => p.id !== state.user.id)
+  state.otherProfile = others.length === 1 ? others[0] : null
+  await loadGroups()
 }
 
 // ——— MONTHS ———
@@ -368,24 +449,37 @@ async function _updateMonthTotals(monthId) {
 }
 
 // ——— SHARED EXPENSES ———
+// Ogni spesa porta con sé le quote per-membro in `shares`.
 export async function loadSharedExpenses() {
   const { data, error } = await supabase
-    .from('shared_expenses').select('*').order('created_at', { ascending: false })
+    .from('shared_expenses')
+    .select('*, shares:shared_expense_shares(user_id, amount)')
+    .order('created_at', { ascending: false })
   if (error) throw error
-  state.sharedExpenses = data
+  state.sharedExpenses = (data || []).map(e => ({ ...e, shares: e.shares || [] }))
 }
 
-export async function addSharedExpense({ transaction_id, month_id, descrizione, importo_totale, split_type, share_eu, share_ma, paid_by }) {
+// shares: [{ user_id, amount }] — una riga per membro partecipante.
+export async function addSharedExpense({ transaction_id, month_id, descrizione, importo_totale, split_type, shares, paid_by }) {
   const { data, error } = await supabase
     .from('shared_expenses')
     .insert({
       transaction_id, month_id, descrizione, importo_totale,
-      paid_by: paid_by || state.user?.id, split_type, share_eu, share_ma, settled: false,
+      paid_by: paid_by || state.user?.id, split_type: split_type || 'custom', settled: false,
     })
     .select()
   if (error) throw error
-  state.sharedExpenses.unshift(data[0])
-  return data[0]
+  const expense = data[0]
+  const rows = (shares || [])
+    .filter(s => s.user_id && Number(s.amount) > 0)
+    .map(s => ({ expense_id: expense.id, user_id: s.user_id, amount: Number(s.amount) }))
+  if (rows.length) {
+    const { error: e2 } = await supabase.from('shared_expense_shares').insert(rows)
+    if (e2) throw e2
+  }
+  expense.shares = rows.map(r => ({ user_id: r.user_id, amount: r.amount }))
+  state.sharedExpenses.unshift(expense)
+  return expense
 }
 
 export async function settleExpense(id) {
@@ -405,16 +499,33 @@ export async function settleAll() {
   state.sharedExpenses.forEach(e => { e.settled = true })
 }
 
-export async function updateSharedExpense(id, { split_type, share_eu, share_ma, importo_totale, paid_by }) {
-  const updates = { split_type, share_eu, share_ma, importo_totale }
+// Aggiorna una spesa e, se passate, rimpiazza le quote per-membro.
+export async function updateSharedExpense(id, { split_type, shares, importo_totale, paid_by }) {
+  const updates = {}
+  if (importo_totale !== undefined) updates.importo_totale = importo_totale
+  if (split_type !== undefined) updates.split_type = split_type
   if (paid_by !== undefined) updates.paid_by = paid_by
-  const { error } = await supabase
-    .from('shared_expenses')
-    .update(updates)
-    .eq('id', id)
-  if (error) throw error
+  if (Object.keys(updates).length) {
+    const { error } = await supabase.from('shared_expenses').update(updates).eq('id', id)
+    if (error) throw error
+  }
+  if (shares) {
+    await supabase.from('shared_expense_shares').delete().eq('expense_id', id)
+    const rows = shares
+      .filter(s => s.user_id && Number(s.amount) > 0)
+      .map(s => ({ expense_id: id, user_id: s.user_id, amount: Number(s.amount) }))
+    if (rows.length) {
+      const { error: e2 } = await supabase.from('shared_expense_shares').insert(rows)
+      if (e2) throw e2
+    }
+  }
   const exp = state.sharedExpenses.find(e => e.id === id)
-  if (exp) Object.assign(exp, updates)
+  if (exp) {
+    Object.assign(exp, updates)
+    if (shares) exp.shares = shares
+      .filter(s => s.user_id && Number(s.amount) > 0)
+      .map(s => ({ user_id: s.user_id, amount: Number(s.amount) }))
+  }
 }
 
 export async function deleteSharedExpense(transactionId) {
