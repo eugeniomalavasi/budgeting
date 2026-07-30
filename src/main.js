@@ -6,22 +6,29 @@ import Transazioni from './views/Transazioni.vue'
 import Aggiungi from './views/Aggiungi.vue'
 import Stats from './views/Stats.vue'
 import Login from './views/Login.vue'
+import ResetPassword from './views/ResetPassword.vue'
+import Profilo from './views/Profilo.vue'
 import Dividi from './views/Dividi.vue'
-import { state, initAuth, loadMonths, loadTransactions, loadSharedExpenses } from './lib/store.js'
+import { state, authFlow, initAuth, loadMonths, loadTransactions, loadSharedExpenses } from './lib/store.js'
 
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: '/login', component: Login },
+    { path: '/reset', component: ResetPassword },
     { path: '/', component: Home, meta: { auth: true } },
     { path: '/transazioni', component: Transazioni, meta: { auth: true } },
     { path: '/aggiungi', component: Aggiungi, meta: { auth: true } },
     { path: '/dividi', component: Dividi, meta: { auth: true } },
     { path: '/stats', component: Stats, meta: { auth: true } },
+    { path: '/profilo', component: Profilo, meta: { auth: true } },
   ]
 })
 
 router.beforeEach(async (to) => {
+  // Flusso di recupero password: Supabase ha creato una sessione temporanea,
+  // ma l'utente deve prima impostare la nuova password.
+  if (authFlow.recovery && to.path !== '/reset') return '/reset'
   if (to.meta.auth && !state.user) return '/login'
 })
 

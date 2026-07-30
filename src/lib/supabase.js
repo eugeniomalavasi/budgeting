@@ -15,7 +15,12 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false,
+      // Serve per completare i redirect di recupero password e login Google:
+      // Supabase torna con ?code=... e la sessione va intercettata dall'URL.
+      // Con PKCE il token arriva in query string (?code) invece che nel
+      // fragment (#access_token), così non collide con l'hash-router di Vue.
+      detectSessionInUrl: true,
+      flowType: 'pkce',
       lock: async (_name, _acquireTimeout, fn) => fn(),
     },
   }

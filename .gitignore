@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vite/
+.DS_Store
+
+# Repo git annidato, non fa parte dell'app
+budgeting/
+
+# Backup con dati reali: non versionare
+backup_*.json
+
+# Env
+.env
+.env.*

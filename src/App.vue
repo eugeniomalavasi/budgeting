@@ -1,12 +1,19 @@
 <template>
   <div class="shell">
+    <router-link
+      v-if="state.user && !isAuthPage && route.path !== '/profilo'"
+      to="/profilo"
+      class="avatar-btn"
+      aria-label="Profilo"
+    >{{ initial }}</router-link>
+
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">
         <component :is="Component" />
       </transition>
     </router-view>
 
-    <nav class="bottom-nav" v-if="state.user && !isLogin">
+    <nav class="bottom-nav" v-if="state.user && !isAuthPage">
       <router-link to="/" class="nav-item">
         <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round" stroke-linejoin="round">
@@ -58,7 +65,10 @@ import { useRoute } from 'vue-router'
 import { state } from './lib/store.js'
 
 const route = useRoute()
-const isLogin = computed(() => route.path === '/login')
+const isAuthPage = computed(() => route.path === '/login' || route.path === '/reset')
+const initial = computed(() =>
+  (state.profile?.name || state.user?.email || '?').trim().charAt(0).toUpperCase()
+)
 
 // Refresh forzato prima di aprire "Aggiungi".
 // Il router è in hash mode (createWebHashHistory), quindi la rotta sta dopo
@@ -121,6 +131,28 @@ body {
   position: relative;
   background: var(--bg);
 }
+
+/* ——— AVATAR PROFILO (fisso in alto a destra, allineato alla colonna) ——— */
+.avatar-btn {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  right: max(14px, calc(50vw - 240px + 14px));
+  z-index: 200;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #0e0e0e;
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+}
+.avatar-btn:active { transform: scale(0.94); }
 
 /* ——— BOTTOM NAV ——— */
 .bottom-nav {

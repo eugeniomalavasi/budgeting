@@ -6,10 +6,10 @@
           <p class="header-greeting">Ciao {{ userName }} 🦊</p>
           <p class="header-sub">{{ today }}</p>
         </div>
-        <div class="saldo-badge">
+        <!-- <div class="saldo-badge">
           <span class="saldo-label">Saldo</span>
           <span class="saldo-value">{{ fmt(currentMonth?.saldo_finale) }}</span>
-        </div>
+        </div> -->
       </div>
 
       <div class="month-scroll">
@@ -25,15 +25,15 @@
         <span class="split-summary-icon">{{ saldoCondiviso >= 0 ? '🎉' : '😅' }}</span>
         <div class="split-summary-text">
           <template v-if="saldoCondiviso > 0.01">
-            <span class="split-summary-nome">{{ nomeAltro }}</span> ti deve
+            <span v-if="coupleMode" class="split-summary-nome">{{ nomeAltro }}</span> {{ coupleMode ? 'ti deve' : 'Ti devono' }}
             <span class="split-summary-amount pos amount">{{ fmtFull(saldoCondiviso) }}</span>
           </template>
           <template v-else-if="saldoCondiviso < -0.01">
-            Devi a <span class="split-summary-nome">{{ nomeAltro }}</span>
+            {{ coupleMode ? 'Devi a' : 'Devi' }} <span v-if="coupleMode" class="split-summary-nome">{{ nomeAltro }}</span>
             <span class="split-summary-amount neg amount">{{ fmtFull(Math.abs(saldoCondiviso)) }}</span>
           </template>
           <template v-else>
-            Siete in pari con {{ nomeAltro }} 🤝
+            {{ coupleMode ? 'Siete in pari con ' + nomeAltro : 'Sei in pari' }} 🤝
           </template>
         </div>
         <span class="split-summary-arrow">›</span>
@@ -135,7 +135,8 @@ const userName = computed(() => state.profile?.name || state.user?.email?.split(
 const today = computed(() => new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }))
 
 // Riepilogo "Dividi" da mostrare in cima
-const nomeAltro = computed(() => state.otherProfile?.name || 'Margherita')
+const coupleMode = computed(() => state.members.length === 2)
+const nomeAltro = computed(() => state.otherProfile?.name || 'l\'altro')
 const unsettledCount = computed(() => state.sharedExpenses.filter(s => !s.settled).length)
 
 const savePercent = computed(() => {
@@ -204,6 +205,8 @@ watch(() => state.currentMonthId, async (newId) => {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
+  /* spazio a destra per l'avatar profilo flottante */
+  padding-right: 44px;
 }
 
 .header-greeting {
