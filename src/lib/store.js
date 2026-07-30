@@ -80,6 +80,13 @@ export function fmtFull(v) {
 }
 
 // ——— AUTH ———
+// URL a cui Supabase rimanda dopo conferma email / reset / OAuth.
+// Con hash-router il redirect va all'origin; il ?code=... viene
+// intercettato da detectSessionInUrl (vedi supabase.js).
+function redirectUrl() {
+  return window.location.origin + window.location.pathname
+}
+
 export async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw error
@@ -87,30 +94,91 @@ export async function signIn(email, password) {
   await loadProfile()
 }
 
+// Registrazione. Se la conferma email è attiva (lo sarà), la sessione
+// NON parte subito: l'utente riceve la mail e conferma. Restituiamo un
+// flag così la UI mostra "controlla la tua email".
+export async function signUp(email, password, name) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: redirectUrl(),
+      data: { name: name || email.split('@')[0] },
+    },
+  })
+  if (error) throw error
+  // needsConfirm = true quando non c'è ancora una sessione attiva
+  const needsConfirm = !data.session
+  if (data.session) {
+    state.user = data.user
+    await loadProfile()
+  }
+  return { needsConfirm }
+}
+
+// Invia la mail di reset password. Il link riporta all'app con il flag
+// di recovery; onAuthStateChange emette 'PASSWORD_RECOVERY'.
+export async function resetPassword(email) {
+  // Rimandiamo alla root: al ritorno Supabase emette l'evento
+  // PASSWORD_RECOVERY e il router guard dirotta su /reset (vedi main.js).
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: redirectUrl(),
+  })
+  if (error) throw error
+}
+
+// Imposta la nuova password (chiamata dalla schermata di recovery,
+// quando esiste già una sessione temporanea di recupero).
+export async function updatePassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) throw error
+}
+
+export async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: redirectUrl() },
+  })
+  if (error) throw error
+}
+
 export async function signOut() {
   await supabase.auth.signOut()
   Object.assign(state, { user: null, profile: null, otherProfile: null, months: [], transactions: [], sharedExpenses: [] })
 }
 
+// true durante il flusso di recupero password: la UI deve mandare
+// l'utente alla schermata "imposta nuova password".
+export const authFlow = reactive({ recovery: false })
+
 export async function initAuth() {
   const { data: { session } } = await supabase.auth.getSession()
   state.user = session?.user || null
   if (state.user) await loadProfile()
-  supabase.auth.onAuthStateChange(async (_, session) => {
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') authFlow.recovery = true
     state.user = session?.user || null
     if (state.user) await loadProfile()
+    else Object.assign(state, { profile: null, otherProfile: null })
   })
 }
 
 async function loadProfile() {
   if (!state.user) return
   const { data } = await supabase.from('profiles').select('*')
-  if (data?.length) {
-    state.profile = data.find(p => p.id === state.user.id) || { id: state.user.id, name: state.user.email.split('@')[0] }
-    state.otherProfile = data.find(p => p.id !== state.user.id) || null
+  const mine = data?.find(p => p.id === state.user.id)
+  if (mine) {
+    state.profile = mine
   } else {
-    state.profile = { id: state.user.id, name: state.user.email.split('@')[0] }
+    // Nessun profilo (es. signup via Google o trigger non attivo):
+    // crealo al volo col nome dai metadata o dall'email.
+    const name = state.user.user_metadata?.name || state.user.email.split('@')[0]
+    const { data: created } = await supabase
+      .from('profiles').upsert({ id: state.user.id, name }).select()
+    state.profile = created?.[0] || { id: state.user.id, name }
   }
+  // "L'altro" profilo dell'household (modello a 2 persone, resta per ora)
+  state.otherProfile = data?.find(p => p.id !== state.user.id) || null
 }
 
 // ——— MONTHS ———
@@ -121,11 +189,26 @@ export async function loadMonths() {
   const { data, error } = await supabase.from('months').select('*').order('id', { ascending: true })
   if (error) throw error
   state.months = data
-  if (!data.length) return
 
   // Calcola l'ID del mese REALE di oggi (es. "2026-06")
   const now = new Date()
   const todayId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  // Household nuovo/vuoto (es. dopo la registrazione): crea il primo mese
+  // così l'app ha da subito qualcosa da mostrare.
+  if (!data.length) {
+    const label = `${MESI_IT[now.getMonth()]} ${now.getFullYear()}`
+    const { data: created, error: e2 } = await supabase.from('months').insert({
+      id: todayId, label,
+      saldo_iniziale: 0, saldo_finale: 0, risparmiati: 0,
+      entrate_previste: 0, entrate_effettive: 0,
+      uscite_previste: 0, uscite_effettive: 0,
+    }).select()
+    if (e2) throw e2
+    state.months = created
+    state.currentMonthId = todayId
+    return
+  }
 
   const exists = data.find(m => m.id === todayId)
   if (exists) {
