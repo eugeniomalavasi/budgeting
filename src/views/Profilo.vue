@@ -76,6 +76,12 @@
         <p class="hint">La persona deve avere un account con questa email; vedrà la richiesta nel suo profilo.</p>
       </div>
 
+      <!-- Categorie -->
+      <router-link to="/categorie" class="card sect nav-link">
+        <span class="nav-link-text">🏷️ Gestisci categorie</span>
+        <span class="nav-link-arrow">›</span>
+      </router-link>
+
       <!-- Nome -->
       <div class="card sect">
         <label class="sect-label">Nome visualizzato</label>
@@ -363,6 +369,13 @@ async function logout() {
   font-size: 0.9rem; padding: 2px 4px;
 }
 .hint { font-size: 0.75rem; color: var(--text2); line-height: 1.35; }
+
+.nav-link {
+  display: flex; align-items: center; justify-content: space-between;
+  text-decoration: none; color: var(--text); cursor: pointer;
+}
+.nav-link-text { font-size: 0.95rem; font-weight: 600; }
+.nav-link-arrow { font-size: 1.4rem; color: var(--text2); }
 
 .msg { font-size: 0.82rem; }
 .msg.ok { color: var(--green); }

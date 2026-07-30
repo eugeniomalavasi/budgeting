@@ -10,6 +10,8 @@ export const state = reactive({
   activeGroupId: null,  // = profiles.household_id (gruppo attualmente visualizzato)
   invitations: [],      // inviti pendenti indirizzati a me: [{ id, household_id, group_name }]
   sentInvitations: [],  // inviti pendenti inviati per il gruppo attivo
+  groupBalances: [],    // saldo dell'utente in ogni gruppo: [{ household_id, name, balance }]
+  categories: [],       // categorie del gruppo attivo: [{ id, name, kind, emoji, color, sort }]
   months: [],
   transactions: [],
   sharedExpenses: [],   // ogni spesa ha .shares = [{ user_id, amount }]
@@ -101,6 +103,22 @@ export const CAT_EMOJI = {
   'Animali domestici': '🐾', 'Debiti': '💸', 'Risparmi': '🏦',
 }
 
+// ——— CATEGORIE DINAMICHE ———
+// Liste per la UI (dal gruppo attivo), ordinate.
+export const categorieUscite = computed(() =>
+  state.categories.filter(c => c.kind === 'uscita').sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name))
+)
+export const categorieEntrate = computed(() =>
+  state.categories.filter(c => c.kind === 'entrata').sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name))
+)
+// Emoji/colore di una categoria per nome (fallback ai default statici).
+export function catEmoji(name) {
+  return state.categories.find(c => c.name === name)?.emoji || CAT_EMOJI[name] || '📦'
+}
+export function catColor(name) {
+  return state.categories.find(c => c.name === name)?.color || CAT_COLORS[name] || '#94a3b8'
+}
+
 export function fmt(v) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v || 0)
 }
@@ -189,6 +207,7 @@ export async function signOut() {
     user: null, profile: null, otherProfile: null,
     members: [], groups: [], activeGroupId: null,
     invitations: [], sentInvitations: [],
+    groupBalances: [], categories: [],
     months: [], transactions: [], sharedExpenses: [],
   })
 }
@@ -207,6 +226,47 @@ export async function loadGroups() {
     role: g.role,
     name: g.households?.name || 'Gruppo',
   }))
+}
+
+// ——— SALDI PER GRUPPO (Home) ———
+export async function loadGroupBalances() {
+  if (!state.user) return
+  const { data, error } = await supabase.rpc('my_group_balances')
+  if (error) throw error
+  state.groupBalances = (data || []).map(g => ({
+    household_id: g.household_id, name: g.name, balance: Number(g.balance) || 0,
+  }))
+}
+
+// ——— CATEGORIE ———
+export async function loadCategories() {
+  const { data, error } = await supabase
+    .from('categories').select('*').order('sort', { ascending: true })
+  if (error) throw error
+  state.categories = data || []
+}
+
+export async function addCategory({ name, kind, emoji, color }) {
+  const { data, error } = await supabase.from('categories').insert({
+    household_id: state.activeGroupId, name: name.trim(), kind,
+    emoji: emoji || '📦', color: color || '#94a3b8', sort: 50,
+  }).select()
+  if (error) throw error
+  state.categories.push(data[0])
+  return data[0]
+}
+
+export async function updateCategory(id, updates) {
+  const { data, error } = await supabase.from('categories').update(updates).eq('id', id).select()
+  if (error) throw error
+  const idx = state.categories.findIndex(c => c.id === id)
+  if (idx !== -1 && data?.[0]) state.categories[idx] = data[0]
+}
+
+export async function deleteCategory(id) {
+  const { error } = await supabase.from('categories').delete().eq('id', id)
+  if (error) throw error
+  state.categories = state.categories.filter(c => c.id !== id)
 }
 
 // ——— INVITI ———
@@ -338,6 +398,8 @@ async function loadProfile() {
   state.otherProfile = others.length === 1 ? others[0] : null
   await loadGroups()
   await loadInvitations()
+  await loadCategories()
+  await loadGroupBalances()
 }
 
 // ——— MONTHS ———

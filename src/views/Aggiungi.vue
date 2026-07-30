@@ -36,10 +36,10 @@
           <select v-model="categoria" class="field-input field-select">
             <option disabled value="">Categoria...</option>
             <optgroup label="— Uscite —">
-              <option v-for="c in CATEGORIE_USCITE" :key="c" :value="c">{{ CAT_EMOJI[c] }} {{ c }}</option>
+              <option v-for="c in categorieUscite" :key="c.id" :value="c.name">{{ c.emoji }} {{ c.name }}</option>
             </optgroup>
             <optgroup label="— Entrate —">
-              <option v-for="c in CATEGORIE_ENTRATE" :key="c" :value="c">{{ CAT_EMOJI[c] }} {{ c }}</option>
+              <option v-for="c in categorieEntrate" :key="c.id" :value="c.name">{{ c.emoji }} {{ c.name }}</option>
             </optgroup>
           </select>
         </div>
@@ -115,7 +115,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   state, addTransaction, updateTransaction, deleteTransaction, addSharedExpense, updateSharedExpense, deleteSharedExpense,
-  loadMonths, loadSharedExpenses, CATEGORIE_USCITE, CATEGORIE_ENTRATE, CAT_EMOJI, fmtFull
+  loadMonths, loadSharedExpenses, loadCategories, categorieUscite, categorieEntrate, fmtFull
 } from '../lib/store.js'
 
 const route = useRoute()
@@ -309,6 +309,7 @@ onMounted(async () => {
   if (!state.months.length) await loadMonths()
   if (!meseId.value && state.months.length) meseId.value = state.months[state.months.length - 1].id
   if (!state.sharedExpenses.length) await loadSharedExpenses()
+  if (!state.categories.length) await loadCategories()
   initSplitDefaults()
 
   const txId = route.query.edit

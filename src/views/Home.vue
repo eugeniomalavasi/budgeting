@@ -95,6 +95,23 @@
         </div>
 
       </template>
+
+      <!-- Recap saldi nei vari gruppi (solo se appartieni a più di un gruppo) -->
+      <template v-if="state.groupBalances.length > 1">
+        <p class="section-label">I tuoi gruppi</p>
+        <div class="tx-list card">
+          <button v-for="g in state.groupBalances" :key="g.household_id" class="group-balance-row"
+            :class="{ active: g.household_id === state.activeGroupId }" @click="vaiAlGruppo(g.household_id)">
+            <div class="gb-left">
+              <span class="gb-name">{{ g.name }}</span>
+              <span v-if="g.household_id === state.activeGroupId" class="gb-active">Attivo</span>
+            </div>
+            <span class="gb-amount amount" :class="Math.abs(g.balance) < 0.01 ? '' : (g.balance > 0 ? 'pos' : 'neg')">
+              {{ Math.abs(g.balance) < 0.01 ? 'in pari' : (g.balance > 0 ? '+' : '−') + fmtFull(Math.abs(g.balance)) }}
+            </span>
+          </button>
+        </div>
+      </template>
     </div>
 
     <transition name="sheet">
@@ -123,7 +140,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { state, currentMonth, currentTransactions, saldoCondiviso, loadMonths, loadTransactions, loadSharedExpenses, fmt, fmtFull, CAT_EMOJI } from '../lib/store.js'
+import { state, currentMonth, currentTransactions, saldoCondiviso, switchGroup, loadMonths, loadTransactions, loadSharedExpenses, fmt, fmtFull, CAT_EMOJI } from '../lib/store.js'
 import CatIcon from '../components/CatIcon.vue'
 
 const router = useRouter()
@@ -157,6 +174,11 @@ const recentTx = computed(() => currentTransactions.value.slice(0, 8))
 
 function formatData(d) {
   return new Date(d).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })
+}
+
+async function vaiAlGruppo(householdId) {
+  if (householdId === state.activeGroupId) return
+  await switchGroup(householdId)
 }
 
 function openSheet(tx) { selected.value = tx }
@@ -563,6 +585,26 @@ watch(() => state.currentMonthId, async (newId) => {
   padding: 0.9rem;
   text-decoration: none;
 }
+
+.group-balance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 0.9rem 1.1rem;
+  cursor: pointer;
+  font-family: 'Lexend', sans-serif;
+  color: var(--text);
+}
+.group-balance-row:last-child { border-bottom: none; }
+.group-balance-row:active { background: var(--surface2); }
+.gb-left { display: flex; align-items: center; gap: 0.5rem; }
+.gb-name { font-size: 0.92rem; font-weight: 600; }
+.gb-active { font-size: 0.62rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.gb-amount { font-size: 0.95rem; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--text2); }
 
 /* Sheet */
 .sheet-overlay {

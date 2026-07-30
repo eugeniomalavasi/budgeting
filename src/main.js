@@ -8,6 +8,7 @@ import Stats from './views/Stats.vue'
 import Login from './views/Login.vue'
 import ResetPassword from './views/ResetPassword.vue'
 import Profilo from './views/Profilo.vue'
+import Categorie from './views/Categorie.vue'
 import Dividi from './views/Dividi.vue'
 import { state, authFlow, initAuth, loadMonths, loadTransactions, loadSharedExpenses } from './lib/store.js'
 
@@ -22,6 +23,7 @@ const router = createRouter({
     { path: '/dividi', component: Dividi, meta: { auth: true } },
     { path: '/stats', component: Stats, meta: { auth: true } },
     { path: '/profilo', component: Profilo, meta: { auth: true } },
+    { path: '/categorie', component: Categorie, meta: { auth: true } },
   ]
 })
 

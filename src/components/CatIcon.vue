@@ -1,6 +1,6 @@
 <template>
   <span class="cat-icon-wrap" :style="{ background: bg }">
-    <svg :viewBox="icon.v" fill="none" xmlns="http://www.w3.org/2000/svg" class="cat-svg">
+    <svg v-if="!custom" :viewBox="icon.v" fill="none" xmlns="http://www.w3.org/2000/svg" class="cat-svg">
       <path v-for="(p, i) in icon.paths" :key="i"
         :d="p.d"
         :fill="p.fill || 'none'"
@@ -10,11 +10,13 @@
         :stroke-linejoin="p.slj || 'round'"
       />
     </svg>
+    <span v-else class="cat-emoji">{{ emoji }}</span>
   </span>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { catEmoji, catColor } from '../lib/store.js'
 
 const props = defineProps({ categoria: String, size: { default: 36 } })
 
@@ -143,8 +145,14 @@ const ICONS = {
   },
 }
 
+// Le categorie "note" hanno un'icona SVG dedicata; le custom mostrano l'emoji
+// della categoria su uno sfondo tinta del suo colore.
+const custom = computed(() => !ICONS[props.categoria])
 const icon = computed(() => ICONS[props.categoria] || ICONS['Altro'])
-const bg   = computed(() => icon.value.bg)
+const emoji = computed(() => catEmoji(props.categoria))
+const bg = computed(() =>
+  custom.value ? (catColor(props.categoria) + '22') : icon.value.bg
+)
 </script>
 
 <style scoped>
@@ -160,5 +168,9 @@ const bg   = computed(() => icon.value.bg)
 .cat-svg {
   width: 20px;
   height: 20px;
+}
+.cat-emoji {
+  font-size: 18px;
+  line-height: 1;
 }
 </style>

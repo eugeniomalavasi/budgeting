@@ -6,7 +6,7 @@
         to="/profilo"
         class="avatar-btn"
         aria-label="Profilo"
-      >{{ initial }}</router-link>
+      >{{ initial }}<span v-if="state.invitations.length" class="avatar-dot"></span></router-link>
     </div>
 
     <router-view v-slot="{ Component }">
@@ -162,7 +162,16 @@ body {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
   border: 1.5px solid rgba(255, 255, 255, 0.15);
 }
+.avatar-btn { position: relative; }
 .avatar-btn:active { transform: scale(0.94); }
+.avatar-dot {
+  position: absolute;
+  top: -2px; right: -2px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--red);
+  border: 2px solid var(--bg);
+}
 
 /* ——— BOTTOM NAV ——— */
 .bottom-nav {
