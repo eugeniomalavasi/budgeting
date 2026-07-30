@@ -220,17 +220,18 @@ export async function switchGroup(householdId) {
   await loadSharedExpenses()
 }
 
-// Crea un nuovo gruppo, iscrive l'utente come owner e lo rende attivo.
+// Crea un nuovo gruppo via RPC atomica (household + membership + attivazione),
+// poi ricarica i dati del nuovo gruppo attivo.
 export async function createGroup(name) {
   if (!state.user) return
-  const { data: hh, error: e1 } = await supabase
-    .from('households').insert({ name: name || 'Nuovo gruppo' }).select()
-  if (e1) throw e1
-  const householdId = hh[0].id
-  const { error: e2 } = await supabase
-    .from('group_members').insert({ household_id: householdId, user_id: state.user.id, role: 'owner' })
-  if (e2) throw e2
-  await switchGroup(householdId)
+  const { data: householdId, error } = await supabase.rpc('create_group', { p_name: name || '' })
+  if (error) throw error
+  state.activeGroupId = householdId
+  state.currentMonthId = null
+  await loadProfile()
+  await loadMonths()
+  if (state.currentMonthId) await loadTransactions(state.currentMonthId)
+  await loadSharedExpenses()
   return householdId
 }
 

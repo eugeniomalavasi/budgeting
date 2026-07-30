@@ -1,11 +1,13 @@
 <template>
   <div class="shell">
-    <router-link
-      v-if="state.user && !isAuthPage && route.path !== '/profilo'"
-      to="/profilo"
-      class="avatar-btn"
-      aria-label="Profilo"
-    >{{ initial }}</router-link>
+    <div class="topbar" v-if="state.user && !isAuthPage">
+      <router-link
+        v-if="route.path !== '/profilo'"
+        to="/profilo"
+        class="avatar-btn"
+        aria-label="Profilo"
+      >{{ initial }}</router-link>
+    </div>
 
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">
@@ -132,12 +134,22 @@ body {
   background: var(--bg);
 }
 
-/* ——— AVATAR PROFILO (fisso in alto a destra, allineato alla colonna) ——— */
-.avatar-btn {
+/* ——— TOPBAR: barra fissa in cima, avatar profilo su tutte le pagine ——— */
+.topbar {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 14px);
-  right: max(14px, calc(50vw - 240px + 14px));
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px 0 0;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;   /* la barra non blocca i click; solo l'avatar è cliccabile */
   z-index: 200;
+}
+.avatar-btn {
+  pointer-events: auto;
   width: 38px;
   height: 38px;
   border-radius: 50%;
