@@ -203,13 +203,13 @@ h1, h2, h3, h4, h5, h6 {
 .bottom-nav {
   flex: 0 0 auto;
   width: 100%;
-  height: calc(var(--nav-h) + var(--safe-bottom));
+  height: calc(var(--nav-h) + min(var(--safe-bottom), 12px));
   background: color-mix(in srgb, var(--surface) 88%, #fff);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding-bottom: var(--safe-bottom);
+  padding-bottom: min(var(--safe-bottom), 12px);
   z-index: 100;
 }
 
