@@ -3,7 +3,7 @@
     <div class="home-header">
       <div class="header-top">
         <div>
-          <p class="header-greeting">Ciao {{ userName }} 🐷</p>
+          <p class="header-greeting">Ciao {{ userName }}</p>
           <p class="header-sub">{{ today }}</p>
         </div>
         <!-- <div class="saldo-badge">
@@ -22,7 +22,7 @@
     <div class="px">
       <!-- Riepilogo condiviso: sempre in cima, prima cosa visibile -->
       <router-link to="/dividi" class="split-summary card" :class="saldoCondiviso >= 0 ? 'card-green' : 'card-red'">
-        <span class="split-summary-icon">{{ saldoCondiviso >= 0 ? '🎉' : '😅' }}</span>
+        <!-- <span class="split-summary-icon">{{ saldoCondiviso >= 0 ? '🎉' : '😅' }}</span> -->
         <div class="split-summary-text">
           <template v-if="saldoCondiviso > 0.01">
             <span v-if="coupleMode" class="split-summary-nome">{{ nomeAltro }}</span> {{ coupleMode ? 'ti deve' : 'Ti devono' }}

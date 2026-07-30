@@ -11,7 +11,7 @@
         :d="p.d"
         :fill="p.fill ? 'currentColor' : 'none'"
         :stroke="p.stroke ? 'currentColor' : 'none'"
-        :stroke-width="p.sw ? 2.4 : 0"
+        :stroke-width="p.stroke ? 2.4 : 0"
         :stroke-linecap="p.slc || 'round'"
         :stroke-linejoin="p.slj || 'round'"
       />
