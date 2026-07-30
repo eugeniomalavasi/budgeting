@@ -1,0 +1,196 @@
+<template>
+  <div class="page profile-page">
+    <div class="profile-header">
+      <button class="back-btn" @click="router.back()" aria-label="Indietro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      <h1 class="profile-title">Profilo</h1>
+    </div>
+
+    <div class="px">
+      <!-- Card identità -->
+      <div class="card id-card">
+        <div class="avatar-lg">{{ initial }}</div>
+        <div class="id-info">
+          <p class="id-name">{{ state.profile?.name || '—' }}</p>
+          <p class="id-email">{{ state.user?.email }}</p>
+        </div>
+      </div>
+
+      <!-- Nome -->
+      <div class="card sect">
+        <label class="sect-label">Nome visualizzato</label>
+        <div class="row-inline">
+          <input v-model="name" type="text" class="inp" placeholder="Il tuo nome" />
+          <button class="btn-sm" :disabled="savingName || name.trim() === state.profile?.name || !name.trim()" @click="saveName">
+            {{ savingName ? '...' : 'Salva' }}
+          </button>
+        </div>
+        <p v-if="nameMsg" class="msg ok">{{ nameMsg }}</p>
+      </div>
+
+      <!-- Cambio password -->
+      <div class="card sect">
+        <label class="sect-label">Cambia password</label>
+        <div class="input-wrap">
+          <input v-model="pw1" :type="showPw ? 'text' : 'password'" class="inp" placeholder="Nuova password" autocomplete="new-password" />
+          <button type="button" class="eye-btn" @click="showPw = !showPw" tabindex="-1">
+            <svg v-if="!showPw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+        <input v-model="pw2" :type="showPw ? 'text' : 'password'" class="inp" placeholder="Conferma password" autocomplete="new-password" style="margin-top:8px" />
+        <button class="btn-full" :disabled="savingPw" @click="changePw">
+          {{ savingPw ? '...' : 'Aggiorna password' }}
+        </button>
+        <p v-if="pwErr" class="msg err">{{ pwErr }}</p>
+        <p v-if="pwMsg" class="msg ok">{{ pwMsg }}</p>
+      </div>
+
+      <!-- Logout -->
+      <button class="btn-logout" @click="logout">Disconnetti</button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { state, updateProfileName, updatePassword, signOut } from '../lib/store.js'
+
+const router = useRouter()
+
+const name = ref(state.profile?.name || '')
+const savingName = ref(false)
+const nameMsg = ref('')
+
+const pw1 = ref('')
+const pw2 = ref('')
+const showPw = ref(false)
+const savingPw = ref(false)
+const pwErr = ref('')
+const pwMsg = ref('')
+
+const initial = computed(() =>
+  (state.profile?.name || state.user?.email || '?').trim().charAt(0).toUpperCase()
+)
+
+async function saveName() {
+  nameMsg.value = ''
+  savingName.value = true
+  try {
+    await updateProfileName(name.value.trim())
+    nameMsg.value = 'Nome aggiornato'
+    setTimeout(() => (nameMsg.value = ''), 2500)
+  } catch (e) {
+    nameMsg.value = ''
+  } finally {
+    savingName.value = false
+  }
+}
+
+async function changePw() {
+  pwErr.value = ''
+  pwMsg.value = ''
+  if (pw1.value.length < 6) { pwErr.value = 'Minimo 6 caratteri.'; return }
+  if (pw1.value !== pw2.value) { pwErr.value = 'Le password non coincidono.'; return }
+  savingPw.value = true
+  try {
+    await updatePassword(pw1.value)
+    pw1.value = ''
+    pw2.value = ''
+    pwMsg.value = 'Password aggiornata.'
+    setTimeout(() => (pwMsg.value = ''), 2500)
+  } catch (e) {
+    pwErr.value = 'Errore nell\'aggiornamento. Riprova.'
+  } finally {
+    savingPw.value = false
+  }
+}
+
+async function logout() {
+  await signOut()
+  router.push('/login')
+}
+</script>
+
+<style scoped>
+.profile-page { padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px); }
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem 1.25rem 0.75rem;
+}
+.back-btn {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text); cursor: pointer;
+}
+.back-btn svg { width: 20px; height: 20px; }
+.profile-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+
+.px { padding: 0 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+
+.id-card { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; }
+.avatar-lg {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #0e0e0e; font-weight: 700; font-size: 1.5rem;
+  display: flex; align-items: center; justify-content: center; flex: 0 0 56px;
+}
+.id-name { font-size: 1.1rem; font-weight: 600; }
+.id-email { color: var(--text2); font-size: 0.85rem; margin-top: 2px; }
+
+.sect { padding: 1.25rem; display: flex; flex-direction: column; gap: 10px; }
+.sect-label { font-size: 0.78rem; font-weight: 600; color: var(--text2); letter-spacing: 0.04em; text-transform: uppercase; }
+
+.inp {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+  color: var(--text); font-family: 'Lexend', sans-serif; font-size: 0.95rem;
+  padding: 0.75rem 1rem; outline: none; width: 100%; transition: border-color 0.2s;
+}
+.inp:focus { border-color: var(--accent); }
+
+.row-inline { display: flex; gap: 8px; }
+.row-inline .inp { flex: 1; }
+
+.input-wrap { position: relative; display: flex; align-items: center; }
+.input-wrap .inp { padding-right: 2.8rem; }
+.eye-btn {
+  position: absolute; right: 0.75rem; background: none; border: none;
+  color: var(--text2); cursor: pointer; padding: 4px; display: flex; align-items: center;
+}
+.eye-btn svg { width: 18px; height: 18px; }
+
+.btn-sm {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+  color: var(--text); font-family: 'Lexend', sans-serif; font-weight: 600; font-size: 0.9rem;
+  padding: 0 1rem; cursor: pointer; white-space: nowrap;
+}
+.btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-full {
+  margin-top: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0e0e0e;
+  border: none; border-radius: 12px; font-family: 'Lexend', sans-serif;
+  font-weight: 700; font-size: 0.95rem; padding: 0.8rem; cursor: pointer;
+}
+.btn-full:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-logout {
+  margin-top: 0.5rem;
+  background: rgba(255,95,87,0.1); border: 1px solid rgba(255,95,87,0.3);
+  border-radius: 14px; color: var(--red); font-family: 'Lexend', sans-serif;
+  font-weight: 600; font-size: 0.95rem; padding: 0.9rem; cursor: pointer;
+}
+.btn-logout:active { transform: scale(0.98); }
+
+.msg { font-size: 0.82rem; }
+.msg.ok { color: var(--green); }
+.msg.err { color: var(--red); }
+</style>

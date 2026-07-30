@@ -204,6 +204,8 @@ watch(() => state.currentMonthId, async (newId) => {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
+  /* spazio a destra per l'avatar profilo flottante */
+  padding-right: 44px;
 }
 
 .header-greeting {

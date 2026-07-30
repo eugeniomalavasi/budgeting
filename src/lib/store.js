@@ -142,6 +142,18 @@ export async function signInWithGoogle() {
   if (error) throw error
 }
 
+// Aggiorna il nome visualizzato dell'utente (tabella profiles).
+export async function updateProfileName(name) {
+  if (!state.user) return
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ name })
+    .eq('id', state.user.id)
+    .select()
+  if (error) throw error
+  if (data?.[0]) state.profile = data[0]
+}
+
 export async function signOut() {
   await supabase.auth.signOut()
   Object.assign(state, { user: null, profile: null, otherProfile: null, months: [], transactions: [], sharedExpenses: [] })
