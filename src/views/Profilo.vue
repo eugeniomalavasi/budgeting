@@ -296,7 +296,7 @@ async function logout() {
 </script>
 
 <style scoped>
-.profile-page { padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px); }
+.profile-page { padding-bottom: 20px; }
 
 .profile-header {
   display: flex;

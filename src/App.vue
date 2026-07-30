@@ -1,19 +1,21 @@
 <template>
   <div class="shell">
-    <div class="topbar" v-if="state.user && !isAuthPage">
-      <router-link
-        v-if="route.path !== '/profilo'"
-        to="/profilo"
-        class="avatar-btn"
-        aria-label="Profilo"
-      >{{ initial }}<span v-if="state.invitations.length" class="avatar-dot"></span></router-link>
-    </div>
+    <div class="scroll-area">
+      <div class="topbar" v-if="state.user && !isAuthPage">
+        <router-link
+          v-if="route.path !== '/profilo'"
+          to="/profilo"
+          class="avatar-btn"
+          aria-label="Profilo"
+        >{{ initial }}<span v-if="state.invitations.length" class="avatar-dot"></span></router-link>
+      </div>
 
-    <router-view v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </div>
 
     <nav class="bottom-nav" v-if="state.user && !isAuthPage">
       <router-link to="/" class="nav-item">
@@ -139,9 +141,23 @@ h1, h2, h3, h4, h5, h6 {
 .shell {
   max-width: 480px;
   margin: 0 auto;
-  min-height: 100dvh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
   position: relative;
+  overflow: hidden;
   background: var(--bg);
+}
+
+/* Unico contenitore che scrolla: la bottom-nav resta fuori dallo scroll,
+   sempre ancorata in basso (niente drift con la toolbar del browser mobile). */
+.scroll-area {
+  flex: 1 1 auto;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* ——— TOPBAR: avatar profilo ancorato in cima alla pagina.
@@ -185,12 +201,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ——— BOTTOM NAV ——— */
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  flex: 0 0 auto;
   width: 100%;
-  max-width: 480px;
   height: calc(var(--nav-h) + var(--safe-bottom));
   background: color-mix(in srgb, var(--surface) 88%, #fff);
   border-top: 1px solid var(--border);
@@ -199,8 +211,6 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: space-around;
   padding-bottom: var(--safe-bottom);
   z-index: 100;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
 }
 
 .nav-item {
@@ -260,8 +270,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ——— PAGE ——— */
 .page {
-  min-height: 100dvh;
-  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  min-height: 100%;
+  padding-bottom: 20px;
 }
 
 .card {
