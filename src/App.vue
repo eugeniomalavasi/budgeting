@@ -6,7 +6,7 @@
       </transition>
     </router-view>
 
-    <nav class="bottom-nav" v-if="state.user && !isLogin">
+    <nav class="bottom-nav" v-if="state.user && !isAuthPage">
       <router-link to="/" class="nav-item">
         <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round" stroke-linejoin="round">
@@ -58,7 +58,7 @@ import { useRoute } from 'vue-router'
 import { state } from './lib/store.js'
 
 const route = useRoute()
-const isLogin = computed(() => route.path === '/login')
+const isAuthPage = computed(() => route.path === '/login' || route.path === '/reset')
 
 // Refresh forzato prima di aprire "Aggiungi".
 // Il router è in hash mode (createWebHashHistory), quindi la rotta sta dopo
