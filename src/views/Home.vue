@@ -3,7 +3,7 @@
     <div class="home-header">
       <div class="header-top">
         <div>
-          <p class="header-greeting">Ciao {{ userName }} 🦊</p>
+          <p class="header-greeting">Ciao {{ userName }} 🐷</p>
           <p class="header-sub">{{ today }}</p>
         </div>
         <!-- <div class="saldo-badge">
@@ -327,13 +327,13 @@ watch(() => state.currentMonthId, async (newId) => {
 }
 
 .split-summary.card-green {
-  border-color: rgba(122, 138, 94, 0.3);
-  background: linear-gradient(135deg, rgba(122, 138, 94, 0.08), var(--surface));
+  border-color: color-mix(in srgb, var(--accent2-500) 45%, transparent);
+  background: linear-gradient(135deg, var(--accent2-200), var(--surface));
 }
 
 .split-summary.card-red {
-  border-color: rgba(176, 74, 44, 0.3);
-  background: linear-gradient(135deg, rgba(176, 74, 44, 0.08), var(--surface));
+  border-color: color-mix(in srgb, var(--accent-500) 40%, transparent);
+  background: linear-gradient(135deg, var(--accent-200), var(--surface));
 }
 
 .split-summary-icon {

@@ -2,8 +2,8 @@
   <div class="login-page">
     <div class="login-glow"></div>
     <div class="login-box">
-      <img src="/icons/icon-192.png" class="login-logo" alt="Budget" />
-      <h1 class="login-title">Budget</h1>
+      <img src="/icons/icon-192.png" class="login-logo" alt="PiggyBank" />
+      <h1 class="login-title">PiggyBank</h1>
       <p class="login-sub">{{ subtitle }}</p>
 
       <!-- Messaggio "controlla la mail" dopo signup / reset -->

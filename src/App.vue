@@ -92,18 +92,52 @@ function apriAggiungi() {
 @import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 :root {
-  /* Organic — tema chiaro caldo */
+  /* ══ Organic — tema chiaro caldo. Token allineati 1:1 al design system ══ */
   --bg: #f5ead8;
   --surface: #ebddc5;
   --surface2: #f9f4ed;
-  --border: rgba(32, 30, 29, 0.14);
+  --border: color-mix(in srgb, #201e1d 16%, transparent);
   --text: #201e1d;
   --text2: #82796a;
   --accent: #c67139;
   --accent2: #d67f48;
-  --accent-glow: rgba(198, 113, 57, 0.30);
-  --red: #b04a2c;
-  --green: #5f6f45;
+  --accent-glow: color-mix(in srgb, #c67139 30%, transparent);
+
+  /* Rampe tonali Organic (OKLCH) — usate da icone, badge e sfumature */
+  --neutral-100: #f9f4ed;
+  --neutral-200: #eee7db;
+  --neutral-300: #dcd3c4;
+  --neutral-400: #c0b6a5;
+  --neutral-500: #a19786;
+  --neutral-600: #82796a;
+  --neutral-700: #645c50;
+  --neutral-800: #474238;
+  --neutral-900: #2e2b25;
+
+  --accent-100: #fff2eb;
+  --accent-200: #ffe1d0;
+  --accent-300: #ffc6a5;
+  --accent-400: #f6a06b;
+  --accent-500: #d67f48;
+  --accent-600: #b2622d;
+  --accent-700: #8c491a;
+  --accent-800: #643312;
+  --accent-900: #402310;
+
+  --accent2-100: #f0fae1;
+  --accent2-200: #e1eecc;
+  --accent2-300: #ccdbb2;
+  --accent2-400: #aebf92;
+  --accent2-500: #8fa073;
+  --accent2-600: #728157;
+  --accent2-700: #56633f;
+  --accent2-800: #3d472b;
+  --accent2-900: #272e1b;
+
+  /* Importi: negativo = terracotta 700, positivo = sage 700 (come nel design) */
+  --red: #8c491a;
+  --green: #56633f;
+
   --font-body: 'Figtree', system-ui, sans-serif;
   --font-display: 'Caprasimo', Georgia, serif;
   --nav-h: 72px;
@@ -203,13 +237,15 @@ h1, h2, h3, h4, h5, h6 {
 .bottom-nav {
   flex: 0 0 auto;
   width: 100%;
-  height: calc(var(--nav-h) + min(var(--safe-bottom), 12px));
+  /* La barra alta --nav-h + l'intera area gesture (safe-area) riempita con lo
+     stesso colore: niente più fascia vuota bicolore sotto al menu. */
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
   background: color-mix(in srgb, var(--surface) 88%, #fff);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding-bottom: min(var(--safe-bottom), 12px);
   z-index: 100;
 }
 

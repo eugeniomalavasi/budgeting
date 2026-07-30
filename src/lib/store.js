@@ -85,13 +85,16 @@ export const CATEGORIE_ENTRATE = [
   'Busta paga', 'Bonus', 'Interessi', 'Risparmi', 'Altro'
 ]
 
+// Palette categorie: toni caldi/terrosi derivati dalle rampe Organic
+// (terracotta + sage + neutri). Distinguibili ma coerenti col design system,
+// usati per i grafici e i pallini nelle statistiche.
 export const CAT_COLORS = {
-  'Alimenti': '#4ade80', 'Bollette': '#818cf8', 'Trasporti': '#fb923c',
-  'Salute/spese mediche': '#f472b6', 'Svago': '#c084fc', 'Ristoranti': '#fdba74',
-  'Regali': '#34d399', 'Vestiario': '#22d3ee', 'Casa': '#a3e635',
-  'Viaggi': '#e879f9', 'Busta paga': '#4ade80', 'Interessi': '#60a5fa',
-  'Bonus': '#facc15', 'Altro': '#94a3b8', 'Spese personali': '#64748b',
-  'Animali domestici': '#fbbf24', 'Debiti': '#f87171', 'Risparmi': '#34d399',
+  'Alimenti': '#8fa073', 'Bollette': '#c67139', 'Trasporti': '#b2622d',
+  'Salute/spese mediche': '#a15a4a', 'Svago': '#728157', 'Ristoranti': '#d67f48',
+  'Regali': '#56633f', 'Vestiario': '#82796a', 'Casa': '#645c50',
+  'Viaggi': '#3d472b', 'Busta paga': '#aebf92', 'Interessi': '#8c491a',
+  'Bonus': '#f6a06b', 'Altro': '#a19786', 'Spese personali': '#c0b6a5',
+  'Animali domestici': '#cf9b5e', 'Debiti': '#643312', 'Risparmi': '#ccdbb2',
 }
 
 export const CAT_EMOJI = {
