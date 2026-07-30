@@ -53,64 +53,45 @@
         </div>
       </div>
 
-      <!-- Toggle dividi -->
-      <button v-if="tipo === 'uscita'" class="split-toggle" :class="{ active: dividi }" @click="dividi = !dividi">
-        🤝 {{ dividi ? 'Spesa condivisa ✓' : 'Dividi con ' + nomeAltro }}
+      <!-- Toggle dividi (solo se il gruppo ha almeno 2 membri) -->
+      <button v-if="tipo === 'uscita' && state.members.length >= 2" class="split-toggle" :class="{ active: dividi }" @click="dividi = !dividi">
+        🤝 {{ dividi ? 'Spesa condivisa ✓' : 'Dividi spesa' }}
       </button>
 
-      <!-- 4 opzioni esplicite -->
-      <div v-if="dividi && tipo === 'uscita'" class="split-panel card">
-        <p class="split-title">Chi ha pagato e come dividere?</p>
-        <div class="split-options">
+      <div v-if="dividi && tipo === 'uscita' && state.members.length >= 2" class="split-panel card">
+        <!-- Chi ha pagato -->
+        <div class="split-row">
+          <span class="split-label">Ha pagato</span>
+          <select v-model="payer" class="split-select">
+            <option v-for="m in state.members" :key="m.id" :value="m.id">{{ nameOf(m) }}</option>
+          </select>
+        </div>
 
-          <button :class="['split-opt', splitMode === 'io_meta' && 'active']" @click="setSplitMode('io_meta')">
-            <div class="so-top">
-              <span class="so-payer">{{ nomeIo }} paga</span>
-              <span class="so-badge">50/50</span>
-            </div>
-            <div class="so-sub">Ciascuno deve metà</div>
-            <div class="so-amounts" v-if="importoNum > 0">
-              <span>{{ nomeIo }} {{ fmtFull(-previewShares('io_meta').io) }}</span>
-              <span>{{ nomeAltro }} {{ fmtFull(-previewShares('io_meta').altro) }}</span>
-            </div>
-          </button>
+        <!-- Modalità di divisione -->
+        <div class="split-mode">
+          <button type="button" :class="['sm-btn', splitEqual && 'active']" @click="splitEqual = true">Parti uguali</button>
+          <button type="button" :class="['sm-btn', !splitEqual && 'active']" @click="splitEqual = false">Quote custom</button>
+        </div>
 
-          <button :class="['split-opt', splitMode === 'altro_meta' && 'active']" @click="setSplitMode('altro_meta')">
-            <div class="so-top">
-              <span class="so-payer">{{ nomeAltro }} paga</span>
-              <span class="so-badge">50/50</span>
-            </div>
-            <div class="so-sub">Ciascuno deve metà</div>
-            <div class="so-amounts" v-if="importoNum > 0">
-              <span>{{ nomeIo }} {{ fmtFull(-previewShares('altro_meta').io) }}</span>
-              <span>{{ nomeAltro }} {{ fmtFull(-previewShares('altro_meta').altro) }}</span>
-            </div>
-          </button>
+        <!-- Parti uguali: seleziona chi partecipa -->
+        <div v-if="splitEqual" class="members-list">
+          <label v-for="m in state.members" :key="m.id" class="member-row">
+            <input type="checkbox" v-model="participants[m.id]" />
+            <span class="member-name">{{ nameOf(m) }}</span>
+            <span class="member-amount">{{ fmtFull(equalShares[m.id] || 0) }}</span>
+          </label>
+        </div>
 
-          <button :class="['split-opt', splitMode === 'io_tutto' && 'active']" @click="setSplitMode('io_tutto')">
-            <div class="so-top">
-              <span class="so-payer">{{ nomeIo }} paga</span>
-              <span class="so-badge so-badge-red">{{ nomeAltro }} deve tutto</span>
-            </div>
-            <div class="so-sub">{{ nomeAltro }} rimborsa {{ nomeIo }}</div>
-            <div class="so-amounts" v-if="importoNum > 0">
-              <span class="pos">{{ nomeIo }} +{{ fmtFull(previewShares('io_tutto').altro) }}</span>
-              <span class="neg">{{ nomeAltro }} {{ fmtFull(-previewShares('io_tutto').altro) }}</span>
-            </div>
-          </button>
-
-          <button :class="['split-opt', splitMode === 'altro_tutto' && 'active']" @click="setSplitMode('altro_tutto')">
-            <div class="so-top">
-              <span class="so-payer">{{ nomeAltro }} paga</span>
-              <span class="so-badge so-badge-red">{{ nomeIo }} deve tutto</span>
-            </div>
-            <div class="so-sub">{{ nomeIo }} rimborsa {{ nomeAltro }}</div>
-            <div class="so-amounts" v-if="importoNum > 0">
-              <span class="neg">{{ nomeIo }} {{ fmtFull(-previewShares('altro_tutto').io) }}</span>
-              <span class="pos">{{ nomeAltro }} +{{ fmtFull(previewShares('altro_tutto').io) }}</span>
-            </div>
-          </button>
-
+        <!-- Quote custom: importo per membro -->
+        <div v-else class="members-list">
+          <div v-for="m in state.members" :key="m.id" class="member-row">
+            <span class="member-name">{{ nameOf(m) }}</span>
+            <input class="member-input" type="number" inputmode="decimal" min="0" step="0.01"
+              v-model="customAmounts[m.id]" placeholder="0" />
+          </div>
+          <div class="custom-sum" :class="{ bad: !customValid }">
+            Somma quote: {{ fmtFull(customSum) }} / {{ fmtFull(importoNum) }}
+          </div>
         </div>
       </div>
 
@@ -130,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   state, addTransaction, updateTransaction, deleteTransaction, addSharedExpense, updateSharedExpense, deleteSharedExpense,
@@ -147,7 +128,10 @@ const data = ref(new Date().toISOString().split('T')[0])
 const categoria = ref('')
 const meseId = ref(state.currentMonthId || '')
 const dividi = ref(false)
-const splitMode = ref('io_meta') // eu_meta | ma_meta | eu_tutto | ma_tutto
+const payer = ref(null)           // id del membro che ha pagato
+const splitEqual = ref(true)      // true = parti uguali, false = quote custom
+const participants = reactive({}) // { [memberId]: boolean }
+const customAmounts = reactive({})// { [memberId]: string }
 const errore = ref('')
 const saving = ref(false)
 const toastVisible = ref(false)
@@ -167,32 +151,44 @@ const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫']
 const importoNum = computed(() => parseFloat(importoRaw.value) || 0)
 const importoDisplay = computed(() => !importoRaw.value || importoRaw.value === '0' ? '0' : importoRaw.value)
 
-// Chi sono io e chi è l'altro — funziona per entrambi gli utenti
-const nomeIo = computed(() => state.profile?.name || 'Io')
-const nomeAltro = computed(() => state.otherProfile?.name || 'Altro')
-const idIo = computed(() => state.user?.id)
-const idAltro = computed(() => state.otherProfile?.id)
+function nameOf(m) { return m.id === state.user?.id ? 'Tu' : m.name }
 
-function setSplitMode(mode) {
-  splitMode.value = mode
-  // Ricalcola quote con importo attuale
+// Default: pago io, tutti partecipano.
+function initSplitDefaults() {
+  payer.value = state.user?.id || state.members[0]?.id || null
+  state.members.forEach(m => { participants[m.id] = true })
 }
 
-// Computed reactive: calcola le quote per TUTTE e 4 le modalità in una volta sola.
-// Così Vue sa che dipende da importoNum e rirenderizza tutto quando cambia.
-const allPreviews = computed(() => {
+// Quote in "parti uguali" tra i partecipanti selezionati (resto sul primo).
+const equalShares = computed(() => {
   const tot = importoNum.value
-  const half = Math.round(tot / 2 * 100) / 100
-  const half2 = Math.round((tot - half) * 100) / 100
-  return {
-    io_meta: { io: half, altro: half2 },
-    altro_meta: { io: half, altro: half2 },
-    io_tutto: { io: 0, altro: tot },
-    altro_tutto: { io: tot, altro: 0 },
-  }
+  const ids = state.members.filter(m => participants[m.id]).map(m => m.id)
+  const out = {}
+  if (!ids.length) return out
+  const each = Math.floor((tot / ids.length) * 100) / 100
+  ids.forEach(id => { out[id] = each })
+  const rem = Math.round((tot - each * ids.length) * 100) / 100
+  if (rem !== 0) out[ids[0]] = Math.round((out[ids[0]] + rem) * 100) / 100
+  return out
 })
-// Shorthand usato nel template
-function previewShares(mode) { return allPreviews.value[mode] || allPreviews.value.io_meta }
+
+const customSum = computed(() =>
+  state.members.reduce((s, m) => s + (Number(customAmounts[m.id]) || 0), 0)
+)
+const customValid = computed(() => Math.abs(customSum.value - importoNum.value) < 0.01)
+
+// Array [{ user_id, amount }] da salvare.
+function buildShares() {
+  if (splitEqual.value) {
+    return Object.entries(equalShares.value).map(([user_id, amount]) => ({ user_id, amount }))
+  }
+  return state.members
+    .map(m => ({ user_id: m.id, amount: Number(customAmounts[m.id]) || 0 }))
+    .filter(s => s.amount > 0)
+}
+
+// Se il gruppo cambia o si attiva "dividi", inizializza i default una volta.
+watch(dividi, (on) => { if (on && !payer.value) initSplitDefaults() })
 
 function keyPress(k) {
   if (k === '⌫') { importoRaw.value = importoRaw.value.length <= 1 ? '0' : importoRaw.value.slice(0, -1); return }
@@ -220,51 +216,6 @@ function annulla() { router.back() }
 function normalizzaData(d) { return d ? String(d).split('T')[0] : new Date().toISOString().split('T')[0] }
 function normalizzaImporto(v) { return String(Math.round(Math.abs(parseFloat(v)) * 100) / 100) }
 
-// Calcola share_eu, share_ma e paid_by in base alla modalità scelta
-// io_meta  = ho pagato io, dividiamo a metà
-// altro_meta = ha pagato l'altro, dividiamo a metà
-// io_tutto = ho pagato io, l'altro deve tutto
-// altro_tutto = ha pagato l'altro, io devo tutto
-function calcolaShares() {
-  const tot = importoNum.value
-  const half = Math.round(tot / 2 * 100) / 100
-  const half2 = Math.round((tot - half) * 100) / 100
-  const isEu = state.profile?.name === 'Eugenio'
-
-  // share_eu e share_ma sono sempre relativi a Eugenio/Margherita
-  // indipendentemente da chi è loggato
-  switch (splitMode.value) {
-    case 'io_meta':
-      return {
-        share_eu: isEu ? half : half2,
-        share_ma: isEu ? half2 : half,
-        paid_by: idIo.value
-      }
-    case 'altro_meta':
-      return {
-        share_eu: isEu ? half : half2,
-        share_ma: isEu ? half2 : half,
-        paid_by: idAltro.value
-      }
-    case 'io_tutto':
-      // L'altro deve tutto a me
-      return {
-        share_eu: isEu ? 0 : tot,
-        share_ma: isEu ? tot : 0,
-        paid_by: idIo.value
-      }
-    case 'altro_tutto':
-      // Io devo tutto all'altro
-      return {
-        share_eu: isEu ? tot : 0,
-        share_ma: isEu ? 0 : tot,
-        paid_by: idAltro.value
-      }
-    default:
-      return { share_eu: isEu ? half : half2, share_ma: isEu ? half2 : half, paid_by: idIo.value }
-  }
-}
-
 // Rete di sicurezza: se una richiesta a Supabase resta "appesa" (es. problemi
 // di rete), dopo 15s sblocchiamo comunque il pulsante invece di lasciarlo
 // bloccato finché l'utente non forza un refresh della pagina.
@@ -282,6 +233,11 @@ async function salva() {
   if (!descrizione.value.trim()) { errore.value = 'Inserisci una descrizione.'; return }
   if (!categoria.value) { errore.value = 'Seleziona una categoria.'; return }
   if (!meseId.value) { errore.value = 'Seleziona il mese.'; return }
+
+  if (dividi.value && tipo.value === 'uscita' && state.members.length >= 2) {
+    if (buildShares().length === 0) { errore.value = 'Seleziona almeno un partecipante.'; return }
+    if (!splitEqual.value && !customValid.value) { errore.value = 'Le quote non sommano al totale.'; return }
+  }
 
   saving.value = true
   try {
@@ -304,20 +260,18 @@ async function salvaInterno() {
       categoria: categoria.value, month_id: meseId.value,
     })
     // Aggiorna o crea shared expense
-    if (dividi.value && tipo.value === 'uscita') {
-      const { share_eu, share_ma, paid_by } = calcolaShares()
+    if (dividi.value && tipo.value === 'uscita' && state.members.length >= 2) {
+      const shares = buildShares()
+      const split_type = splitEqual.value ? 'equal' : 'custom'
       if (editSharedId.value) {
-        // Aggiorna quella esistente
         await updateSharedExpense(editSharedId.value, {
-          split_type: splitMode.value, share_eu, share_ma,
-          importo_totale: importo, paid_by,
+          split_type, shares, importo_totale: importo, paid_by: payer.value,
         })
       } else {
-        // Crea nuova shared expense per questo movimento
         await addSharedExpense({
           transaction_id: editId.value, month_id: meseId.value,
           descrizione: descrizione.value.trim(), importo_totale: importo,
-          split_type: splitMode.value, share_eu, share_ma, paid_by,
+          split_type, shares, paid_by: payer.value,
         })
       }
     } else if (!dividi.value && editSharedId.value) {
@@ -330,12 +284,11 @@ async function salvaInterno() {
       month_id: meseId.value, data: data.value,
       importo: importoFinal, descrizione: descrizione.value.trim(), categoria: categoria.value,
     })
-    if (dividi.value) {
-      const { share_eu, share_ma, paid_by } = calcolaShares()
+    if (dividi.value && state.members.length >= 2) {
       await addSharedExpense({
         transaction_id: tx.id, month_id: meseId.value,
         descrizione: descrizione.value.trim(), importo_totale: importo,
-        split_type: splitMode.value, share_eu, share_ma, paid_by,
+        split_type: splitEqual.value ? 'equal' : 'custom', shares: buildShares(), paid_by: payer.value,
       })
     }
   }
@@ -345,7 +298,10 @@ async function salvaInterno() {
 
   if (!editMode.value) {
     importoRaw.value = '0'; descrizione.value = ''
-    categoria.value = ''; dividi.value = false; splitMode.value = 'eu_meta'
+    categoria.value = ''; dividi.value = false
+    splitEqual.value = true
+    state.members.forEach(m => { customAmounts[m.id] = '' })
+    initSplitDefaults()
   }
 }
 
@@ -353,6 +309,7 @@ onMounted(async () => {
   if (!state.months.length) await loadMonths()
   if (!meseId.value && state.months.length) meseId.value = state.months[state.months.length - 1].id
   if (!state.sharedExpenses.length) await loadSharedExpenses()
+  initSplitDefaults()
 
   const txId = route.query.edit
   if (txId) {
@@ -365,22 +322,19 @@ onMounted(async () => {
       data.value = normalizzaData(tx.data)
       categoria.value = tx.categoria; meseId.value = tx.month_id
 
-      // Controlla se esiste una shared expense collegata
+      // Ricostruisci pagatore, partecipanti e modalità dalla shared expense
       const shared = state.sharedExpenses.find(s => s.transaction_id === tx.id)
       if (shared) {
         dividi.value = true
-        // Determina la modalità dalla shared expense
-        const isEuPayer = shared.paid_by === ([state.profile, state.otherProfile].filter(Boolean).find(p => p.name === 'Eugenio')?.id)
-        const isEu = state.profile?.name === 'Eugenio'
-        const maDoveTutto = Number(shared.share_ma) >= Number(shared.importo_totale) * 0.99
-        const euDoveTutto = Number(shared.share_eu) >= Number(shared.importo_totale) * 0.99
-        const ioPayer = shared.paid_by === state.user?.id
-        const altroDoveTutto = isEu ? maDoveTutto : euDoveTutto
-        const ioDoveTutto = isEu ? euDoveTutto : maDoveTutto
-        if (ioPayer && altroDoveTutto) splitMode.value = 'io_tutto'
-        else if (!ioPayer && ioDoveTutto) splitMode.value = 'altro_tutto'
-        else if (ioPayer) splitMode.value = 'io_meta'
-        else splitMode.value = 'altro_meta'
+        payer.value = shared.paid_by
+        const shares = shared.shares || []
+        state.members.forEach(m => { participants[m.id] = false; customAmounts[m.id] = '' })
+        shares.forEach(s => { participants[s.user_id] = true })
+        // "Parti uguali" se tutte le quote dei partecipanti sono ~uguali
+        const amounts = shares.map(s => Number(s.amount))
+        const allEqual = amounts.length > 0 && amounts.every(a => Math.abs(a - amounts[0]) < 0.02)
+        splitEqual.value = allEqual
+        if (!allEqual) shares.forEach(s => { customAmounts[s.user_id] = String(s.amount) })
         editSharedId.value = shared.id
       }
     }
@@ -559,8 +513,109 @@ onMounted(async () => {
   background: rgba(245, 166, 35, 0.08);
 }
 
-/* Split panel con 4 opzioni */
+/* Split panel N-persone */
 .split-panel {
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.split-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.split-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text2);
+}
+.split-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  cursor: pointer;
+}
+.split-select option { background: var(--surface); color: var(--text); }
+
+.split-mode {
+  display: flex;
+  gap: 0.4rem;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 4px;
+}
+.sm-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  color: var(--text2);
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sm-btn.active { background: var(--accent); color: #0e0e0e; }
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+}
+.member-row input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.member-name { flex: 1; font-size: 0.9rem; font-weight: 500; }
+.member-amount {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--text2);
+}
+.member-input {
+  width: 90px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.6rem;
+  outline: none;
+  text-align: right;
+}
+.member-input:focus { border-color: var(--accent); }
+.custom-sum {
+  font-size: 0.8rem;
+  color: var(--text2);
+  text-align: right;
+  padding-top: 2px;
+}
+.custom-sum.bad { color: var(--red); }
+
+/* Split panel con 4 opzioni (legacy, non più usato) */
+.split-panel-legacy {
   padding: 1.1rem;
   display: flex;
   flex-direction: column;

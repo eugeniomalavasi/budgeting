@@ -1,28 +1,39 @@
 <template>
   <div class="page">
     <div class="div-header">
-      <h1 class="div-title">Conti con {{ nomeAltro }}</h1>
+      <h1 class="div-title">{{ headerTitle }}</h1>
     </div>
 
     <div class="px">
       <div class="saldo-card card" :class="saldoCondiviso >= 0 ? 'card-green' : 'card-red'">
-        <div class="saldo-icon">{{ saldoCondiviso >= 0 ? '🎉' : '😅' }}</div>
+        <div class="saldo-icon">{{ Math.abs(saldoCondiviso) < 0.01 ? '🤝' : (saldoCondiviso > 0 ? '🎉' : '😅') }}</div>
         <div v-if="saldoCondiviso > 0.01" class="saldo-text">
-          <span class="saldo-nome">{{ nomeAltro }}</span>
-          <span class="saldo-desc">ti deve</span>
+          <span class="saldo-desc">{{ coupleMode ? nomeAltro + ' ti deve' : 'Ti devono in totale' }}</span>
           <span class="saldo-amount pos amount">{{ fmtFull(saldoCondiviso) }}</span>
         </div>
         <div v-else-if="saldoCondiviso < -0.01" class="saldo-text">
-          <span class="saldo-desc">Devi a</span>
-          <span class="saldo-nome">{{ nomeAltro }}</span>
+          <span class="saldo-desc">{{ coupleMode ? 'Devi a ' + nomeAltro : 'Devi in totale' }}</span>
           <span class="saldo-amount neg amount">{{ fmtFull(Math.abs(saldoCondiviso)) }}</span>
         </div>
         <div v-else class="saldo-text">
-          <span class="saldo-desc">Siete in pari 🤝</span>
+          <span class="saldo-desc">Sei in pari 🤝</span>
         </div>
         <button v-if="Math.abs(saldoCondiviso) > 0.01 && unsettled.length" class="settle-btn" @click="pareggia">
           Segna tutto come saldato
         </button>
+      </div>
+
+      <!-- Saldi per membro (solo se il gruppo ha più di 2 persone) -->
+      <div v-if="!coupleMode && state.members.length > 1">
+        <p class="section-label">Saldi del gruppo</p>
+        <div class="card tx-list">
+          <div v-for="m in state.members" :key="m.id" class="balance-row">
+            <span class="balance-name">{{ nameOf(m) }}</span>
+            <span class="balance-amount amount" :class="balanceClass(m.id)">
+              {{ balanceLabel(m.id) }}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div v-if="unsettled.length">
@@ -33,15 +44,14 @@
               <span class="sr-desc">{{ s.descrizione }}</span>
               <span class="sr-meta">
                 {{ formatData(s.created_at) }} ·
-                {{ s.paid_by === state.user?.id ? 'Hai pagato tu' : 'Ha pagato ' + nomeAltro }}
+                {{ s.paid_by === state.user?.id ? 'Hai pagato tu' : 'Ha pagato ' + memberName(s.paid_by) }}
               </span>
               <span class="sr-split">{{ splitLabel(s) }}</span>
             </div>
             <div class="sr-right">
               <span class="sr-total">{{ fmtFull(s.importo_totale) }}</span>
-              <span class="sr-quota" :class="s.paid_by === state.user?.id ? 'pos' : 'neg'">
-                {{ s.paid_by === state.user?.id ? '+' : '−' }}{{ fmtFull(s.paid_by === state.user?.id ? quotaAltro(s) :
-                  quotaMia(s)) }}
+              <span class="sr-quota" :class="quotaRiga(s) >= 0 ? 'pos' : 'neg'">
+                {{ quotaRiga(s) >= 0 ? '+' : '−' }}{{ fmtFull(Math.abs(quotaRiga(s))) }}
               </span>
             </div>
           </div>
@@ -77,66 +87,18 @@
         <div class="sheet">
           <div class="sheet-handle"></div>
           <p class="sheet-desc">{{ selected.descrizione }}</p>
-          <p class="sheet-amount amount" :class="selected.paid_by === state.user?.id ? 'pos' : 'neg'">
-            {{ fmtFull(selected.importo_totale) }}
-          </p>
+          <p class="sheet-amount amount">{{ fmtFull(selected.importo_totale) }}</p>
 
           <div class="sheet-details">
-            <div class="sheet-row"><span>Pagato da</span><span>{{
-              selected.paid_by === state.user?.id ? (state.profile?.name || 'Tu') : nomeAltro }}</span></div>
-            <div class="sheet-row"><span>Quota {{ state.profile?.name }}</span><span class="neg amount">{{
-              fmtFull(quotaMia(selected)) }}</span></div>
-            <div class="sheet-row"><span>Quota {{ nomeAltro }}</span><span class="neg amount">{{
-              fmtFull(quotaAltro(selected)) }}</span></div>
+            <div class="sheet-row"><span>Pagato da</span><span>{{ memberName(selected.paid_by) }}</span></div>
+            <div class="sheet-row" v-for="sh in (selected.shares || [])" :key="sh.user_id">
+              <span>Quota {{ memberName(sh.user_id) }}</span>
+              <span class="neg amount">{{ fmtFull(sh.amount) }}</span>
+            </div>
             <div class="sheet-row"><span>Data</span><span>{{ formatData(selected.created_at) }}</span></div>
           </div>
 
-          <!-- Modifica suddivisione: 4 opzioni esplicite -->
-          <div class="edit-split-section">
-            <p class="edit-split-title">Modifica suddivisione</p>
-            <div class="split-options">
-              <button :class="['split-opt', editSplitMode === 'eu_meta' && 'active']"
-                @click="setEditSplitMode('eu_meta')">
-                <div class="so-top"><span class="so-payer">Eugenio paga</span><span class="so-badge">50/50</span></div>
-                <div class="so-amounts" v-if="selected?.importo_totale">
-                  <span>Eu {{ fmtFull(-previewShares('eu_meta').eu) }}</span>
-                  <span>{{ nomeAltro }} {{ fmtFull(-previewShares('eu_meta').ma) }}</span>
-                </div>
-              </button>
-              <button :class="['split-opt', editSplitMode === 'ma_meta' && 'active']"
-                @click="setEditSplitMode('ma_meta')">
-                <div class="so-top"><span class="so-payer">{{ nomeAltro }} paga</span><span
-                    class="so-badge">50/50</span></div>
-                <div class="so-amounts" v-if="selected?.importo_totale">
-                  <span>Eu {{ fmtFull(-previewShares('ma_meta').eu) }}</span>
-                  <span>{{ nomeAltro }} {{ fmtFull(-previewShares('ma_meta').ma) }}</span>
-                </div>
-              </button>
-              <button :class="['split-opt', editSplitMode === 'eu_tutto' && 'active']"
-                @click="setEditSplitMode('eu_tutto')">
-                <div class="so-top"><span class="so-payer">Eugenio paga</span><span class="so-badge so-badge-red">{{
-                    nomeAltro }} deve tutto</span></div>
-                <div class="so-amounts" v-if="selected?.importo_totale">
-                  <span class="pos">Eu +{{ fmtFull(previewShares('eu_tutto').eu) }}</span>
-                  <span class="neg">{{ nomeAltro }} {{ fmtFull(-previewShares('eu_tutto').ma) }}</span>
-                </div>
-              </button>
-              <button :class="['split-opt', editSplitMode === 'ma_tutto' && 'active']"
-                @click="setEditSplitMode('ma_tutto')">
-                <div class="so-top"><span class="so-payer">{{ nomeAltro }} paga</span><span
-                    class="so-badge so-badge-red">Eugenio deve tutto</span></div>
-                <div class="so-amounts" v-if="selected?.importo_totale">
-                  <span class="neg">Eu {{ fmtFull(-previewShares('ma_tutto').eu) }}</span>
-                  <span class="pos">{{ nomeAltro }} +{{ fmtFull(previewShares('ma_tutto').ma) }}</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <button class="edit-mov-btn" @click="modificaMovimento(selected)">✏️ Modifica movimento</button>
-          <button class="save-split-btn" @click="salvaSuddivisione" :disabled="savingSplit">
-            {{ savingSplit ? 'Salvataggio...' : '💾 Salva suddivisione' }}
-          </button>
+          <button class="edit-mov-btn" @click="modificaMovimento(selected)">✏️ Modifica movimento e suddivisione</button>
           <button v-if="!selected.settled" class="settle-single-btn" @click="pareggiaSingolo(selected)">
             ✓ Segna come saldato
           </button>
@@ -152,114 +114,70 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  state, saldoCondiviso, loadSharedExpenses, settleExpense, settleAll,
-  updateSharedExpense, deleteSharedExpense, deleteTransaction, fmtFull
+  state, saldoCondiviso, memberBalances, shareOf, memberName,
+  loadSharedExpenses, settleExpense, settleAll,
+  deleteSharedExpense, deleteTransaction, fmtFull
 } from '../lib/store.js'
 
 const router = useRouter()
 const selected = ref(null)
-const editSplitMode = ref('eu_meta')
-const savingSplit = ref(false)
 
-const nomeAltro = computed(() => state.otherProfile?.name || 'Margherita')
+const coupleMode = computed(() => state.members.length === 2)
+const nomeAltro = computed(() => state.otherProfile?.name || 'l\'altro')
+const headerTitle = computed(() =>
+  coupleMode.value ? `Conti con ${nomeAltro.value}` : 'Conti del gruppo'
+)
 const unsettled = computed(() => state.sharedExpenses.filter(s => !s.settled))
 const settled = computed(() => state.sharedExpenses.filter(s => s.settled))
 
-// Trova sempre i profili per nome, indipendentemente da chi è loggato
-const idEu = computed(() => [state.profile, state.otherProfile].filter(Boolean).find(p => p.name === 'Eugenio')?.id)
-const idMa = computed(() => [state.profile, state.otherProfile].filter(Boolean).find(p => p.name === 'Margherita')?.id)
-const nomeIo = computed(() => state.profile?.name || 'Io')
+function nameOf(m) { return m.id === state.user?.id ? 'Tu' : m.name }
 
-function quotaMia(s) {
-  return state.profile?.name === 'Eugenio' ? Number(s.share_eu) : Number(s.share_ma)
+// Quota "di riga" dal punto di vista dell'utente: positivo = mi spetta, negativo = devo.
+function quotaRiga(s) {
+  const me = state.user?.id
+  const myShare = shareOf(s, me)
+  return s.paid_by === me ? (Number(s.importo_totale) - myShare) : -myShare
 }
-function quotaAltro(s) {
-  return state.profile?.name === 'Eugenio' ? Number(s.share_ma) : Number(s.share_eu)
+
+// Saldo netto di un membro (memberBalances): >0 in credito, <0 in debito.
+function balanceLabel(userId) {
+  const net = memberBalances.value[userId] || 0
+  if (Math.abs(net) < 0.01) return 'in pari'
+  return (net > 0 ? '+' : '−') + fmtFull(Math.abs(net))
+}
+function balanceClass(userId) {
+  const net = memberBalances.value[userId] || 0
+  if (Math.abs(net) < 0.01) return ''
+  return net > 0 ? 'pos' : 'neg'
 }
 
 function splitLabel(s) {
-  if (s.split_type === 'eu_meta' || s.split_type === 'ma_meta' || s.split_type === 'equal') return '50/50'
-  if (s.split_type === 'eu_tutto') return `Eugenio ha pagato · ${nomeAltro.value} deve tutto`
-  if (s.split_type === 'ma_tutto') return `${nomeAltro.value} ha pagato · Eugenio deve tutto`
-  return s.split_type || 'Importo fisso'
+  const n = s.shares?.length || 0
+  if (s.split_type === 'equal') return n > 1 ? `Parti uguali · ${n}` : 'Uno paga tutto'
+  if (s.split_type === 'custom') return 'Quote personalizzate'
+  return n ? `${n} quote` : 'Suddivisa'
 }
 
 function formatData(d) {
   return new Date(d).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: '2-digit' })
 }
 
-function getModeFromExpense(s) {
-  const isEuPayer = s.paid_by === idEu.value
-  const maDoveTutto = Number(s.share_ma) >= Number(s.importo_totale) * 0.99
-  const euDoveTutto = Number(s.share_eu) >= Number(s.importo_totale) * 0.99
-  // Traduce i valori DB (eu_meta/ma_meta/eu_tutto/ma_tutto) nelle 4 opzioni dal punto di vista di chi guarda
-  if (isEuPayer && maDoveTutto) return 'eu_tutto'
-  if (!isEuPayer && euDoveTutto) return 'ma_tutto'
-  return isEuPayer ? 'eu_meta' : 'ma_meta'
+function apriSheet(s) { selected.value = s }
+
+function modificaMovimento(s) {
+  selected.value = null
+  router.push({ path: '/aggiungi', query: { edit: s.transaction_id } })
 }
-
-function apriSheet(s) {
-  selected.value = s
-  editSplitMode.value = getModeFromExpense(s)
-}
-
-function setEditSplitMode(mode) { editSplitMode.value = mode }
-
-// Computed reactive: dipende da selected, si ricalcola automaticamente quando cambia
-const allPreviews = computed(() => {
-  const tot = selected.value?.importo_totale || 0
-  const half = Math.round(tot / 2 * 100) / 100
-  const half2 = Math.round((tot - half) * 100) / 100
-  return {
-    eu_meta: { eu: half, ma: half2 },
-    ma_meta: { eu: half, ma: half2 },
-    eu_tutto: { eu: tot, ma: tot },
-    ma_tutto: { eu: tot, ma: tot },
-  }
-})
-function previewShares(mode) { return allPreviews.value[mode] || allPreviews.value.eu_meta }
 
 async function eliminaMovimento(s) {
   if (!confirm(`Eliminare "${s.descrizione}"?`)) return
   try {
-    // Elimina prima la shared expense, poi la transazione
     await deleteSharedExpense(s.transaction_id)
     await deleteTransaction(s.transaction_id)
     selected.value = null
   } catch (e) {
     alert('Errore eliminazione: ' + e.message)
   }
-}
-
-function calcolaSharesEdit() {
-  const tot = selected.value?.importo_totale || 0
-  const half = Math.round(tot / 2 * 100) / 100
-  const half2 = Math.round((tot - half) * 100) / 100
-  switch (editSplitMode.value) {
-    case 'eu_meta': return { share_eu: half, share_ma: half2, paid_by: idEu.value }
-    case 'ma_meta': return { share_eu: half, share_ma: half2, paid_by: idMa.value }
-    case 'eu_tutto': return { share_eu: 0, share_ma: tot, paid_by: idEu.value }
-    case 'ma_tutto': return { share_eu: tot, share_ma: 0, paid_by: idMa.value }
-    default: return { share_eu: half, share_ma: half2, paid_by: idEu.value }
-  }
-}
-
-async function salvaSuddivisione() {
-  if (!selected.value) return
-  savingSplit.value = true
-  try {
-    const { share_eu, share_ma, paid_by } = calcolaSharesEdit()
-    await updateSharedExpense(selected.value.id, {
-      split_type: editSplitMode.value, share_eu, share_ma,
-      importo_totale: selected.value.importo_totale, paid_by,
-    })
-    selected.value = { ...selected.value, split_type: editSplitMode.value, share_eu, share_ma, paid_by }
-  } finally { savingSplit.value = false }
-}
-
-function modificaMovimento(s) {
-  selected.value = null
-  router.push({ path: '/aggiungi', query: { edit: s.transaction_id } })
 }
 
 async function pareggia() { await settleAll() }
@@ -354,6 +272,17 @@ onMounted(async () => { await loadSharedExpenses() })
 .tx-list {
   overflow: hidden;
 }
+
+.balance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.balance-row:last-child { border-bottom: none; }
+.balance-name { font-size: 0.9rem; font-weight: 500; }
+.balance-amount { font-size: 0.95rem; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--text2); }
 
 .shared-row {
   display: flex;

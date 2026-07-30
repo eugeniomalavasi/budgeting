@@ -19,6 +19,31 @@
         </div>
       </div>
 
+      <!-- Gruppi -->
+      <div class="card sect">
+        <label class="sect-label">I tuoi gruppi</label>
+        <div class="groups-list">
+          <button
+            v-for="g in state.groups"
+            :key="g.household_id"
+            class="group-row"
+            :class="{ active: g.household_id === state.activeGroupId }"
+            @click="scegliGruppo(g.household_id)"
+          >
+            <span class="group-name">{{ g.name }}</span>
+            <span v-if="g.household_id === state.activeGroupId" class="group-badge">Attivo</span>
+            <span v-else class="group-switch">Passa →</span>
+          </button>
+        </div>
+        <div class="row-inline">
+          <input v-model="newGroupName" type="text" class="inp" placeholder="Nome nuovo gruppo" />
+          <button class="btn-sm" :disabled="creatingGroup || !newGroupName.trim()" @click="creaGruppo">
+            {{ creatingGroup ? '...' : 'Crea' }}
+          </button>
+        </div>
+        <p v-if="groupMsg" class="msg ok">{{ groupMsg }}</p>
+      </div>
+
       <!-- Nome -->
       <div class="card sect">
         <label class="sect-label">Nome visualizzato</label>
@@ -58,11 +83,45 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { state, updateProfileName, updatePassword, signOut } from '../lib/store.js'
+import { state, updateProfileName, updatePassword, signOut, switchGroup, createGroup } from '../lib/store.js'
 
 const router = useRouter()
 
 const name = ref(state.profile?.name || '')
+
+// Gruppi
+const newGroupName = ref('')
+const creatingGroup = ref(false)
+const groupMsg = ref('')
+
+async function scegliGruppo(householdId) {
+  if (householdId === state.activeGroupId) return
+  groupMsg.value = ''
+  try {
+    await switchGroup(householdId)
+    name.value = state.profile?.name || ''
+    groupMsg.value = 'Gruppo attivo cambiato.'
+    setTimeout(() => (groupMsg.value = ''), 2000)
+  } catch (e) {
+    groupMsg.value = ''
+  }
+}
+
+async function creaGruppo() {
+  groupMsg.value = ''
+  creatingGroup.value = true
+  try {
+    await createGroup(newGroupName.value.trim())
+    newGroupName.value = ''
+    name.value = state.profile?.name || ''
+    groupMsg.value = 'Gruppo creato e attivato.'
+    setTimeout(() => (groupMsg.value = ''), 2000)
+  } catch (e) {
+    groupMsg.value = ''
+  } finally {
+    creatingGroup.value = false
+  }
+}
 const savingName = ref(false)
 const nameMsg = ref('')
 
@@ -189,6 +248,18 @@ async function logout() {
   font-weight: 600; font-size: 0.95rem; padding: 0.9rem; cursor: pointer;
 }
 .btn-logout:active { transform: scale(0.98); }
+
+.groups-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.group-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 0.7rem 0.9rem; cursor: pointer;
+  font-family: 'Lexend', sans-serif; color: var(--text);
+}
+.group-row.active { border-color: var(--accent); background: rgba(245,166,35,0.08); }
+.group-name { font-size: 0.9rem; font-weight: 600; }
+.group-badge { font-size: 0.7rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.group-switch { font-size: 0.8rem; color: var(--text2); }
 
 .msg { font-size: 0.82rem; }
 .msg.ok { color: var(--green); }
