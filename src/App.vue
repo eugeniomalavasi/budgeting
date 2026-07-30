@@ -134,14 +134,12 @@ body {
   background: var(--bg);
 }
 
-/* ——— TOPBAR: barra fissa in cima, avatar profilo su tutte le pagine ——— */
+/* ——— TOPBAR: avatar profilo ancorato in cima alla pagina.
+   position:absolute → scorre via col contenuto (non resta fisso). ——— */
 .topbar {
-  position: fixed;
+  position: absolute;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
+  right: 0;
   padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px 0 0;
   display: flex;
   justify-content: flex-end;

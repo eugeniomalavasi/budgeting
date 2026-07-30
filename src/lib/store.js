@@ -8,6 +8,8 @@ export const state = reactive({
   members: [],          // membri del gruppo attivo: [{ id, name }]
   groups: [],           // gruppi dell'utente: [{ household_id, name, role }]
   activeGroupId: null,  // = profiles.household_id (gruppo attualmente visualizzato)
+  invitations: [],      // inviti pendenti indirizzati a me: [{ id, household_id, group_name }]
+  sentInvitations: [],  // inviti pendenti inviati per il gruppo attivo
   months: [],
   transactions: [],
   sharedExpenses: [],   // ogni spesa ha .shares = [{ user_id, amount }]
@@ -186,6 +188,7 @@ export async function signOut() {
   Object.assign(state, {
     user: null, profile: null, otherProfile: null,
     members: [], groups: [], activeGroupId: null,
+    invitations: [], sentInvitations: [],
     months: [], transactions: [], sharedExpenses: [],
   })
 }
@@ -204,6 +207,67 @@ export async function loadGroups() {
     role: g.role,
     name: g.households?.name || 'Gruppo',
   }))
+}
+
+// ——— INVITI ———
+// Inviti pendenti indirizzati alla mia email.
+export async function loadInvitations() {
+  if (!state.user?.email) return
+  const { data, error } = await supabase
+    .from('group_invitations')
+    .select('id, household_id, status, households(name)')
+    .eq('status', 'pending')
+    .ilike('email', state.user.email)
+  if (error) throw error
+  state.invitations = (data || []).map(i => ({
+    id: i.id,
+    household_id: i.household_id,
+    group_name: i.households?.name || 'Gruppo',
+  }))
+}
+
+// Inviti pendenti inviati per il gruppo attivo (vista di chi invita).
+export async function loadSentInvitations() {
+  if (!state.activeGroupId) { state.sentInvitations = []; return }
+  const { data, error } = await supabase
+    .from('group_invitations')
+    .select('id, email, status')
+    .eq('household_id', state.activeGroupId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  state.sentInvitations = data || []
+}
+
+// Invita una persona (per email) nel gruppo attivo.
+export async function createInvitation(email) {
+  if (!state.user || !state.activeGroupId) return
+  const clean = String(email).trim().toLowerCase()
+  if (!clean) throw new Error('Email mancante')
+  const { error } = await supabase.from('group_invitations').insert({
+    household_id: state.activeGroupId,
+    email: clean,
+    invited_by: state.user.id,
+  })
+  if (error) throw error
+  await loadSentInvitations()
+}
+
+// Annulla un invito che hai mandato.
+export async function cancelInvitation(id) {
+  const { error } = await supabase.from('group_invitations').delete().eq('id', id)
+  if (error) throw error
+  state.sentInvitations = state.sentInvitations.filter(i => i.id !== id)
+}
+
+// Accetta o rifiuta un invito ricevuto (RPC sicura).
+export async function respondInvitation(id, accept) {
+  const { data: householdId, error } = await supabase
+    .rpc('respond_invitation', { p_invite: id, p_accept: accept })
+  if (error) throw error
+  state.invitations = state.invitations.filter(i => i.id !== id)
+  await loadGroups()
+  if (accept && householdId) await switchGroup(householdId)
 }
 
 // Cambia il gruppo attivo (aggiorna profiles.household_id) e ricarica tutto.
@@ -273,6 +337,7 @@ async function loadProfile() {
   const others = (data || []).filter(p => p.id !== state.user.id)
   state.otherProfile = others.length === 1 ? others[0] : null
   await loadGroups()
+  await loadInvitations()
 }
 
 // ——— MONTHS ———

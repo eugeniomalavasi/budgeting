@@ -19,6 +19,18 @@
         </div>
       </div>
 
+      <!-- Richieste ricevute -->
+      <div v-if="state.invitations.length" class="card sect invite-incoming">
+        <label class="sect-label">Richieste di partecipazione</label>
+        <div v-for="inv in state.invitations" :key="inv.id" class="invite-row">
+          <span class="invite-text">Invito al gruppo <b>{{ inv.group_name }}</b></span>
+          <div class="invite-actions">
+            <button class="btn-accept" @click="rispondi(inv.id, true)">Accetta</button>
+            <button class="btn-decline" @click="rispondi(inv.id, false)">Rifiuta</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Gruppi -->
       <div class="card sect">
         <label class="sect-label">I tuoi gruppi</label>
@@ -42,6 +54,26 @@
           </button>
         </div>
         <p v-if="groupMsg" class="msg ok">{{ groupMsg }}</p>
+      </div>
+
+      <!-- Invita nel gruppo attivo -->
+      <div class="card sect">
+        <label class="sect-label">Invita nel gruppo attivo</label>
+        <div class="row-inline">
+          <input v-model="inviteEmail" type="email" class="inp" placeholder="email@persona.com" autocomplete="off" />
+          <button class="btn-sm" :disabled="inviting || !inviteEmail.trim()" @click="invita">
+            {{ inviting ? '...' : 'Invita' }}
+          </button>
+        </div>
+        <div v-if="state.sentInvitations.length" class="sent-list">
+          <div v-for="s in state.sentInvitations" :key="s.id" class="sent-row">
+            <span class="sent-email">{{ s.email }}</span>
+            <span class="sent-status">in attesa</span>
+            <button class="sent-cancel" @click="annullaInvito(s.id)" aria-label="Annulla">✕</button>
+          </div>
+        </div>
+        <p v-if="invitingMsg" class="msg ok">{{ invitingMsg }}</p>
+        <p class="hint">La persona deve avere un account con questa email; vedrà la richiesta nel suo profilo.</p>
       </div>
 
       <!-- Nome -->
@@ -81,9 +113,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { state, updateProfileName, updatePassword, signOut, switchGroup, createGroup } from '../lib/store.js'
+import {
+  state, updateProfileName, updatePassword, signOut, switchGroup, createGroup,
+  loadSentInvitations, createInvitation, cancelInvitation, respondInvitation,
+} from '../lib/store.js'
 
 const router = useRouter()
 
@@ -93,6 +128,41 @@ const name = ref(state.profile?.name || '')
 const newGroupName = ref('')
 const creatingGroup = ref(false)
 const groupMsg = ref('')
+
+// Inviti
+const inviteEmail = ref('')
+const invitingMsg = ref('')
+const inviting = ref(false)
+
+async function invita() {
+  invitingMsg.value = ''
+  const email = inviteEmail.value.trim()
+  if (!email) return
+  inviting.value = true
+  try {
+    await createInvitation(email)
+    inviteEmail.value = ''
+    invitingMsg.value = 'Invito creato. La persona lo vedrà nel suo profilo.'
+    setTimeout(() => (invitingMsg.value = ''), 3000)
+  } catch (e) {
+    invitingMsg.value = 'Errore nell\'invito.'
+  } finally {
+    inviting.value = false
+  }
+}
+
+async function annullaInvito(id) {
+  try { await cancelInvitation(id) } catch (e) { /* noop */ }
+}
+
+async function rispondi(id, accept) {
+  try {
+    await respondInvitation(id, accept)
+    name.value = state.profile?.name || ''
+  } catch (e) { /* noop */ }
+}
+
+onMounted(() => { loadSentInvitations() })
 
 async function scegliGruppo(householdId) {
   if (householdId === state.activeGroupId) return
@@ -260,6 +330,39 @@ async function logout() {
 .group-name { font-size: 0.9rem; font-weight: 600; }
 .group-badge { font-size: 0.7rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
 .group-switch { font-size: 0.8rem; color: var(--text2); }
+
+.invite-incoming { border-color: rgba(245,166,35,0.4); }
+.invite-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem; flex-wrap: wrap;
+}
+.invite-text { font-size: 0.9rem; }
+.invite-actions { display: flex; gap: 0.4rem; }
+.btn-accept {
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0e0e0e;
+  border: none; border-radius: 10px; font-family: 'Lexend', sans-serif; font-weight: 700;
+  font-size: 0.85rem; padding: 0.45rem 0.9rem; cursor: pointer;
+}
+.btn-decline {
+  background: transparent; color: var(--text2);
+  border: 1px solid var(--border); border-radius: 10px;
+  font-family: 'Lexend', sans-serif; font-weight: 600; font-size: 0.85rem;
+  padding: 0.45rem 0.9rem; cursor: pointer;
+}
+
+.sent-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.sent-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.5rem 0.75rem;
+}
+.sent-email { flex: 1; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sent-status { font-size: 0.72rem; color: var(--text2); }
+.sent-cancel {
+  background: none; border: none; color: var(--text2); cursor: pointer;
+  font-size: 0.9rem; padding: 2px 4px;
+}
+.hint { font-size: 0.75rem; color: var(--text2); line-height: 1.35; }
 
 .msg { font-size: 0.82rem; }
 .msg.ok { color: var(--green); }
