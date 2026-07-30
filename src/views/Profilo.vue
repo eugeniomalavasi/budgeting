@@ -53,7 +53,16 @@
             {{ creatingGroup ? '...' : 'Crea' }}
           </button>
         </div>
+        <button
+          v-if="canDeleteActive"
+          class="btn-danger"
+          :disabled="deletingGroup"
+          @click="eliminaGruppo"
+        >
+          {{ deletingGroup ? '...' : `Elimina gruppo “${activeGroupName}”` }}
+        </button>
         <p v-if="groupMsg" class="msg ok">{{ groupMsg }}</p>
+        <p v-if="groupErr" class="msg err">{{ groupErr }}</p>
       </div>
 
       <!-- Invita nel gruppo attivo -->
@@ -122,7 +131,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  state, updateProfileName, updatePassword, signOut, switchGroup, createGroup,
+  state, updateProfileName, updatePassword, signOut, switchGroup, createGroup, deleteGroup,
   loadSentInvitations, createInvitation, cancelInvitation, respondInvitation,
 } from '../lib/store.js'
 
@@ -134,6 +143,41 @@ const name = ref(state.profile?.name || '')
 const newGroupName = ref('')
 const creatingGroup = ref(false)
 const groupMsg = ref('')
+const groupErr = ref('')
+const deletingGroup = ref(false)
+
+const activeGroup = computed(() =>
+  state.groups.find(g => g.household_id === state.activeGroupId)
+)
+const activeGroupName = computed(() => activeGroup.value?.name || 'gruppo')
+// Solo l'owner può eliminare, e mai l'ultimo gruppo rimasto.
+const canDeleteActive = computed(() =>
+  activeGroup.value?.role === 'owner' && state.groups.length > 1
+)
+
+async function eliminaGruppo() {
+  groupErr.value = ''
+  groupMsg.value = ''
+  const nome = activeGroupName.value
+  const ok = confirm(
+    `⚠️ Eliminare il gruppo “${nome}”?\n\n` +
+    `Tutti i suoi dati — movimenti, spese condivise, categorie e mesi — verranno rimossi dall'app per TUTTI i membri.\n\n` +
+    `I dati non vengono cancellati definitivamente e restano recuperabili dal database, ma il gruppo sparirà dall'app.\n\n` +
+    `Vuoi procedere?`
+  )
+  if (!ok) return
+  deletingGroup.value = true
+  try {
+    await deleteGroup(state.activeGroupId)
+    name.value = state.profile?.name || ''
+    groupMsg.value = `Gruppo “${nome}” eliminato.`
+    setTimeout(() => (groupMsg.value = ''), 3000)
+  } catch (e) {
+    groupErr.value = e?.message || 'Errore nell\'eliminazione del gruppo.'
+  } finally {
+    deletingGroup.value = false
+  }
+}
 
 // Inviti
 const inviteEmail = ref('')
@@ -316,6 +360,14 @@ async function logout() {
   font-weight: 700; font-size: 0.95rem; padding: 0.8rem; cursor: pointer;
 }
 .btn-full:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-danger {
+  margin-top: 2px;
+  background: rgba(255,95,87,0.1); border: 1px solid rgba(255,95,87,0.3);
+  border-radius: 12px; color: var(--red); font-family: 'Lexend', sans-serif;
+  font-weight: 600; font-size: 0.88rem; padding: 0.7rem; cursor: pointer;
+}
+.btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-logout {
   margin-top: 0.5rem;

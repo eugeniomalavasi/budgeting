@@ -118,6 +118,10 @@ export function catEmoji(name) {
 export function catColor(name) {
   return state.categories.find(c => c.name === name)?.color || CAT_COLORS[name] || '#94a3b8'
 }
+// Chiave dell'icona SVG scelta per una categoria (null → fallback per nome/emoji).
+export function catIconKey(name) {
+  return state.categories.find(c => c.name === name)?.icon || null
+}
 
 export function fmt(v) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v || 0)
@@ -218,14 +222,16 @@ export async function loadGroups() {
   if (!state.user) return
   const { data, error } = await supabase
     .from('group_members')
-    .select('household_id, role, households(name)')
+    .select('household_id, role, households(name, deleted_at)')
     .eq('user_id', state.user.id)
   if (error) throw error
-  state.groups = (data || []).map(g => ({
-    household_id: g.household_id,
-    role: g.role,
-    name: g.households?.name || 'Gruppo',
-  }))
+  state.groups = (data || [])
+    .filter(g => !g.households?.deleted_at)   // nascondi i gruppi eliminati
+    .map(g => ({
+      household_id: g.household_id,
+      role: g.role,
+      name: g.households?.name || 'Gruppo',
+    }))
 }
 
 // ——— SALDI PER GRUPPO (Home) ———
@@ -241,15 +247,15 @@ export async function loadGroupBalances() {
 // ——— CATEGORIE ———
 export async function loadCategories() {
   const { data, error } = await supabase
-    .from('categories').select('*').order('sort', { ascending: true })
+    .from('categories').select('*').is('deleted_at', null).order('sort', { ascending: true })
   if (error) throw error
   state.categories = data || []
 }
 
-export async function addCategory({ name, kind, emoji, color }) {
+export async function addCategory({ name, kind, emoji, color, icon }) {
   const { data, error } = await supabase.from('categories').insert({
     household_id: state.activeGroupId, name: name.trim(), kind,
-    emoji: emoji || '📦', color: color || '#94a3b8', sort: 50,
+    emoji: emoji || '📦', color: color || '#94a3b8', icon: icon || null, sort: 50,
   }).select()
   if (error) throw error
   state.categories.push(data[0])
@@ -264,7 +270,9 @@ export async function updateCategory(id, updates) {
 }
 
 export async function deleteCategory(id) {
-  const { error } = await supabase.from('categories').delete().eq('id', id)
+  // Soft delete: la categoria resta nel DB (recuperabile) ma sparisce dall'app.
+  const { error } = await supabase
+    .from('categories').update({ deleted_at: new Date().toISOString() }).eq('id', id)
   if (error) throw error
   state.categories = state.categories.filter(c => c.id !== id)
 }
@@ -342,6 +350,23 @@ export async function switchGroup(householdId) {
   await loadMonths()
   if (state.currentMonthId) await loadTransactions(state.currentMonthId)
   await loadSharedExpenses()
+}
+
+// Elimina (soft delete) un gruppo: solo l'owner, e mai l'ultimo gruppo.
+// I dati non vengono cancellati dal DB, solo nascosti (recuperabili).
+export async function deleteGroup(householdId) {
+  const { error } = await supabase.rpc('delete_group', { p_household: householdId })
+  if (error) throw error
+  const wasActive = householdId === state.activeGroupId
+  await loadGroups()
+  if (wasActive) {
+    const next = state.groups[0]
+    if (next) {
+      state.activeGroupId = null   // forza switchGroup a ricaricare
+      await switchGroup(next.household_id)
+    }
+  }
+  await loadGroupBalances()
 }
 
 // Crea un nuovo gruppo via RPC atomica (household + membership + attivazione),
@@ -500,6 +525,7 @@ export async function loadTransactions(monthId) {
     .from('transactions')
     .select('*')
     .eq('month_id', monthId)
+    .is('deleted_at', null)
     .order('data', { ascending: false })
   if (error) throw error
   state.transactions = [
@@ -553,7 +579,9 @@ export async function updateTransaction(id, updates) {
 export async function deleteTransaction(id) {
   const tx = state.transactions.find(t => t.id === id)
   if (!tx) return
-  const { error } = await supabase.from('transactions').delete().eq('id', id)
+  // Soft delete: nasconde il movimento ma lo mantiene nel DB (recuperabile).
+  const { error } = await supabase
+    .from('transactions').update({ deleted_at: new Date().toISOString() }).eq('id', id)
   if (error) throw error
   state.transactions = state.transactions.filter(t => t.id !== id)
   await _updateMonthTotals(tx.month_id)
@@ -582,6 +610,7 @@ export async function loadSharedExpenses() {
   const { data, error } = await supabase
     .from('shared_expenses')
     .select('*, shares:shared_expense_shares(user_id, amount)')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
   if (error) throw error
   state.sharedExpenses = (data || []).map(e => ({ ...e, shares: e.shares || [] }))
@@ -659,7 +688,9 @@ export async function updateSharedExpense(id, { split_type, shares, importo_tota
 export async function deleteSharedExpense(transactionId) {
   const exp = state.sharedExpenses.find(e => e.transaction_id === transactionId)
   if (!exp) return
-  const { error } = await supabase.from('shared_expenses').delete().eq('id', exp.id)
+  // Soft delete: la spesa condivisa resta nel DB (recuperabile) ma sparisce dall'app.
+  const { error } = await supabase
+    .from('shared_expenses').update({ deleted_at: new Date().toISOString() }).eq('id', exp.id)
   if (error) throw error
   state.sharedExpenses = state.sharedExpenses.filter(e => e.id !== exp.id)
 }

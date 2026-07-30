@@ -1,6 +1,12 @@
 <template>
   <span class="cat-icon-wrap" :style="{ background: bg }">
-    <svg v-if="!custom" :viewBox="icon.v" fill="none" xmlns="http://www.w3.org/2000/svg" class="cat-svg">
+    <!-- 1) Icona SVG scelta dall'utente (nuovo set selezionabile) -->
+    <svg v-if="picked" :viewBox="picked.v" fill="none" xmlns="http://www.w3.org/2000/svg" class="cat-svg" :style="{ color: iconColor }">
+      <path v-for="(d, i) in (picked.s || [])" :key="'s'+i" :d="d" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      <path v-for="(d, i) in (picked.f || [])" :key="'f'+i" :d="d" fill="currentColor" />
+    </svg>
+    <!-- 2) Icona legacy associata al nome categoria -->
+    <svg v-else-if="!custom" :viewBox="icon.v" fill="none" xmlns="http://www.w3.org/2000/svg" class="cat-svg">
       <path v-for="(p, i) in icon.paths" :key="i"
         :d="p.d"
         :fill="p.fill || 'none'"
@@ -10,15 +16,21 @@
         :stroke-linejoin="p.slj || 'round'"
       />
     </svg>
+    <!-- 3) Fallback emoji -->
     <span v-else class="cat-emoji">{{ emoji }}</span>
   </span>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { catEmoji, catColor } from '../lib/store.js'
+import { catEmoji, catColor, catIconKey } from '../lib/store.js'
+import { ICON_MAP } from '../lib/icons.js'
 
 const props = defineProps({ categoria: String, size: { default: 36 } })
+
+// Icona SVG esplicitamente scelta per la categoria (Fase 5).
+const picked = computed(() => ICON_MAP[catIconKey(props.categoria)] || null)
+const iconColor = computed(() => catColor(props.categoria))
 
 const ICONS = {
   'Alimenti': {
@@ -151,7 +163,9 @@ const custom = computed(() => !ICONS[props.categoria])
 const icon = computed(() => ICONS[props.categoria] || ICONS['Altro'])
 const emoji = computed(() => catEmoji(props.categoria))
 const bg = computed(() =>
-  custom.value ? (catColor(props.categoria) + '22') : icon.value.bg
+  picked.value ? (catColor(props.categoria) + '22')
+    : custom.value ? (catColor(props.categoria) + '22')
+    : icon.value.bg
 )
 </script>
 
