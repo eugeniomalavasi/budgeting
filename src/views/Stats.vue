@@ -187,7 +187,7 @@ const saldoData = computed(() => ({
     label: 'Saldo',
     data: months.value.map(m => m.saldo_finale),
     borderColor: 'var(--accent)',
-    backgroundColor: 'rgba(245,166,35,0.1)',
+    backgroundColor: 'rgba(198, 113, 57,0.1)',
     fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: 'var(--accent)',
   }]
 }))
@@ -195,8 +195,8 @@ const saldoData = computed(() => ({
 const entrateUsciteData = computed(() => ({
   labels: labels.value,
   datasets: [
-    { label:'Entrate', data:months.value.map(m=>m.entrate_effettive), backgroundColor:'rgba(74,222,128,0.8)', borderRadius:6 },
-    { label:'Uscite',  data:months.value.map(m=>m.uscite_effettive),  backgroundColor:'rgba(248,113,113,0.8)', borderRadius:6 },
+    { label:'Entrate', data:months.value.map(m=>m.entrate_effettive), backgroundColor:'rgba(122,138,94,0.85)', borderRadius:6 },
+    { label:'Uscite',  data:months.value.map(m=>m.uscite_effettive),  backgroundColor:'rgba(198,113,57,0.85)', borderRadius:6 },
   ]
 }))
 
@@ -212,19 +212,19 @@ const catData = computed(() => ({
   datasets: [{
     data: topCatAll.value.map(([,v]) => v),
     backgroundColor: topCatAll.value.map(([k]) => CAT_COLORS[k]||'#94a3b8'),
-    borderWidth: 2, borderColor: '#1a1d27',
+    borderWidth: 2, borderColor: '#f5ead8',
   }]
 }))
 
 const baseOpts = {
   responsive: true,
   plugins: {
-    legend: { labels: { color:'#8891b0', font:{ family:'Lexend', size:11 } } },
+    legend: { labels: { color:'#82796a', font:{ family:'Figtree', size:11 } } },
     tooltip: { callbacks: { label: ctx => ` €${Number(ctx.raw).toLocaleString('it-IT')}` } }
   },
   scales: {
-    x: { ticks:{ color:'#8891b0', font:{size:10} }, grid:{ color:'rgba(255,255,255,0.05)' } },
-    y: { ticks:{ color:'#8891b0', callback: v=>'€'+Number(v).toLocaleString('it-IT'), font:{size:10} }, grid:{ color:'rgba(255,255,255,0.05)' } }
+    x: { ticks:{ color:'#82796a', font:{size:10} }, grid:{ color:'rgba(32, 30, 29,0.05)' } },
+    y: { ticks:{ color:'#82796a', callback: v=>'€'+Number(v).toLocaleString('it-IT'), font:{size:10} }, grid:{ color:'rgba(32, 30, 29,0.05)' } }
   }
 }
 const lineOpts = { ...baseOpts, plugins: { ...baseOpts.plugins, legend:{ display:false } } }
@@ -232,7 +232,7 @@ const barOpts = { ...baseOpts }
 const doughnutOpts = {
   responsive: true,
   plugins: {
-    legend: { position:'bottom', labels:{ color:'#8891b0', font:{ family:'Lexend', size:11 }, padding:12, boxWidth:12 } },
+    legend: { position:'bottom', labels:{ color:'#82796a', font:{ family:'Figtree', size:11 }, padding:12, boxWidth:12 } },
     tooltip: { callbacks: { label: ctx => ` ${ctx.label}: €${Number(ctx.raw).toLocaleString('it-IT')}` } }
   }
 }
@@ -264,7 +264,7 @@ onMounted(async () => {
 .chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem; }
 .chart-title { font-size:0.78rem; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.05em; }
 .chart-tabs { display:flex; gap:4px; }
-.chart-tab { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text2); cursor:pointer; font-family:'Lexend',sans-serif; font-size:0.75rem; padding:0.25rem 0.6rem; transition:all 0.2s; }
+.chart-tab { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text2); cursor:pointer; font-family:'Figtree', sans-serif; font-size:0.75rem; padding:0.25rem 0.6rem; transition:all 0.2s; }
 .chart-tab.active { background:var(--accent); border-color:var(--accent); color:white; }
 
 /* Month table */
@@ -284,8 +284,8 @@ onMounted(async () => {
   cursor:pointer;
   transition:background 0.15s;
 }
-.mt-row:active { background:rgba(245,166,35,0.08); }
-.mt-row.expanded { background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.12); }
+.mt-row:active { background:rgba(198, 113, 57,0.08); }
+.mt-row.expanded { background:rgba(198, 113, 57,0.08); border:1px solid rgba(198, 113, 57,0.12); }
 
 .mt-main {
   display:grid; grid-template-columns:1fr 1fr 1fr 1fr;
@@ -310,7 +310,7 @@ onMounted(async () => {
 .mt-detail-row {
   display:flex; justify-content:space-between; align-items:center;
   font-size:0.82rem; padding:0.3rem 0;
-  border-bottom:1px solid rgba(255,255,255,0.04);
+  border-bottom:1px solid rgba(32, 30, 29,0.04);
 }
 .mt-detail-row:last-child { border-bottom:none; }
 
@@ -324,7 +324,7 @@ onMounted(async () => {
 .cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .cat-emoji { font-size:1rem; flex-shrink:0; }
 .cat-name { font-size:0.85rem; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cat-bar-wrap { width:60px; height:4px; background:rgba(255,255,255,0.08); border-radius:100px; overflow:hidden; flex-shrink:0; }
+.cat-bar-wrap { width:60px; height:4px; background:rgba(32, 30, 29,0.08); border-radius:100px; overflow:hidden; flex-shrink:0; }
 .cat-bar { height:100%; border-radius:100px; }
 .cat-amount { font-size:0.85rem; flex-shrink:0; }
 </style>

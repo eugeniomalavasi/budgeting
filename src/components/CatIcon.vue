@@ -162,10 +162,17 @@ const ICONS = {
 const custom = computed(() => !ICONS[props.categoria])
 const icon = computed(() => ICONS[props.categoria] || ICONS['Altro'])
 const emoji = computed(() => catEmoji(props.categoria))
+
+// Colore di linea dell'icona legacy (primo stroke/fill definito): serve a
+// tinteggiare lo sfondo chiaro del tile, in stile "Organic" (cerchio pastello).
+const legacyColor = computed(() => {
+  const p = (icon.value.paths || []).find(x => x.stroke || x.fill)
+  return (p && (p.stroke || p.fill)) || '#82796a'
+})
 const bg = computed(() =>
   picked.value ? (catColor(props.categoria) + '22')
     : custom.value ? (catColor(props.categoria) + '22')
-    : icon.value.bg
+    : (legacyColor.value + '26')
 )
 </script>
 

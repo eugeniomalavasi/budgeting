@@ -5,52 +5,56 @@
     </div>
 
     <div class="px">
+      <!-- Tipo movimento (segmented pill) -->
       <div class="type-toggle">
-        <button :class="['type-btn', tipo === 'uscita' && 'active-out']" @click="tipo = 'uscita'">📤 Uscita</button>
-        <button :class="['type-btn', tipo === 'entrata' && 'active-in']" @click="tipo = 'entrata'">📥 Entrata</button>
+        <button type="button" :class="['type-btn', tipo === 'uscita' && 'active-out']" @click="tipo = 'uscita'">Uscita</button>
+        <button type="button" :class="['type-btn', tipo === 'entrata' && 'active-in']" @click="tipo = 'entrata'">Entrata</button>
       </div>
 
-      <div class="amount-display" :class="tipo === 'uscita' ? 'neg' : 'pos'">
-        <span class="amount-symbol">{{ tipo === 'uscita' ? '−' : '+' }}</span>
-        <span class="amount-val">{{ importoDisplay }}</span>
-        <span class="amount-eur">€</span>
+      <!-- Importo: tastiera di sistema -->
+      <div class="amount-hero">
+        <label class="amount-line" :class="tipo === 'uscita' ? 'neg' : 'pos'">
+          <span class="amount-sign">{{ tipo === 'uscita' ? '−' : '+' }}</span>
+          <input v-model="importoRaw" @input="onImporto" class="amount-input" type="text"
+            inputmode="decimal" placeholder="0" />
+          <span class="amount-eur">€</span>
+        </label>
+        <p class="amount-hint">Tocca per digitare l'importo</p>
       </div>
 
-      <div class="keypad">
-        <button v-for="k in keys" :key="k" class="key" @click="keyPress(k)">{{ k }}</button>
+      <!-- Descrizione -->
+      <div class="desc-field">
+        <svg class="desc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        <input v-model="descrizione" class="desc-input" placeholder="Descrizione..." maxlength="80" />
       </div>
 
-      <div class="form-card card">
-        <div class="form-field">
-          <span class="field-icon">✏️</span>
-          <input v-model="descrizione" class="field-input" placeholder="Descrizione..." maxlength="80" />
-        </div>
-        <div class="field-divider"></div>
-        <div class="form-field">
-          <span class="field-icon">📅</span>
-          <input v-model="data" class="field-input" type="date" />
-        </div>
-        <div class="field-divider"></div>
-        <div class="form-field">
-          <span class="field-icon">📁</span>
-          <select v-model="categoria" class="field-input field-select">
-            <option disabled value="">Categoria...</option>
-            <optgroup label="— Uscite —">
-              <option v-for="c in categorieUscite" :key="c.id" :value="c.name">{{ c.emoji }} {{ c.name }}</option>
-            </optgroup>
-            <optgroup label="— Entrate —">
-              <option v-for="c in categorieEntrate" :key="c.id" :value="c.name">{{ c.emoji }} {{ c.name }}</option>
-            </optgroup>
-          </select>
-        </div>
-        <div class="field-divider"></div>
-        <div class="form-field">
-          <span class="field-icon">🗓</span>
-          <select v-model="meseId" class="field-input field-select">
-            <option disabled value="">Mese...</option>
+      <!-- Categoria: chip a scorrimento -->
+      <p class="field-label">Categoria</p>
+      <div class="cat-chips">
+        <button v-for="c in chipCategorie" :key="c.id" type="button" class="cat-chip"
+          :class="{ sel: categoria === c.name }" @click="categoria = c.name">
+          <CatIcon :categoria="c.name" />
+          <span class="cat-chip-name">{{ c.name }}</span>
+        </button>
+        <div v-if="!chipCategorie.length" class="cat-empty">Nessuna categoria</div>
+      </div>
+
+      <!-- Data + Mese -->
+      <div class="dm-row">
+        <label class="dm-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <input v-model="data" type="date" class="dm-input" />
+        </label>
+        <label class="dm-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <select v-model="meseId" class="dm-input dm-select">
+            <option disabled value="">Mese</option>
             <option v-for="m in [...state.months].reverse()" :key="m.id" :value="m.id">{{ m.label }}</option>
           </select>
-        </div>
+        </label>
       </div>
 
       <!-- Toggle dividi (solo se il gruppo ha almeno 2 membri) -->
@@ -98,7 +102,7 @@
       <div v-if="errore" class="error-msg">⚠️ {{ errore }}</div>
 
       <button class="submit-btn" @click="salva" :disabled="saving">
-        {{ saving ? 'Salvataggio...' : editMode ? 'Aggiorna' : 'Salva' }}
+        {{ saving ? 'Salvataggio...' : editMode ? 'Aggiorna' : 'Salva movimento' }}
       </button>
       <button v-if="editMode" class="cancel-btn" @click="annulla">Annulla</button>
       <button v-if="editMode" class="delete-btn" @click="elimina">🗑 Elimina movimento</button>
@@ -117,12 +121,13 @@ import {
   state, addTransaction, updateTransaction, deleteTransaction, addSharedExpense, updateSharedExpense, deleteSharedExpense,
   loadMonths, loadSharedExpenses, loadCategories, categorieUscite, categorieEntrate, fmtFull
 } from '../lib/store.js'
+import CatIcon from '../components/CatIcon.vue'
 
 const route = useRoute()
 const router = useRouter()
 
 const tipo = ref('uscita')
-const importoRaw = ref('0')
+const importoRaw = ref('')
 const descrizione = ref('')
 const data = ref(new Date().toISOString().split('T')[0])
 const categoria = ref('')
@@ -146,10 +151,23 @@ watch(data, (newData) => {
   if (state.months.find(m => m.id === monthId)) meseId.value = monthId
 })
 
-const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫']
-
 const importoNum = computed(() => parseFloat(importoRaw.value) || 0)
-const importoDisplay = computed(() => !importoRaw.value || importoRaw.value === '0' ? '0' : importoRaw.value)
+
+// Categorie mostrate come chip: dipendono dal tipo di movimento selezionato.
+const chipCategorie = computed(() =>
+  tipo.value === 'uscita' ? categorieUscite.value : categorieEntrate.value
+)
+
+// Importo digitato con la tastiera di sistema: accetta cifre e un separatore
+// decimale (virgola o punto), max 2 decimali.
+function onImporto(e) {
+  let v = String(e.target.value).replace(',', '.').replace(/[^0-9.]/g, '')
+  const parts = v.split('.')
+  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+  const [intPart, decPart] = v.split('.')
+  if (decPart !== undefined) v = intPart + '.' + decPart.slice(0, 2)
+  importoRaw.value = v
+}
 
 function nameOf(m) { return m.id === state.user?.id ? 'Tu' : m.name }
 
@@ -189,15 +207,6 @@ function buildShares() {
 
 // Se il gruppo cambia o si attiva "dividi", inizializza i default una volta.
 watch(dividi, (on) => { if (on && !payer.value) initSplitDefaults() })
-
-function keyPress(k) {
-  if (k === '⌫') { importoRaw.value = importoRaw.value.length <= 1 ? '0' : importoRaw.value.slice(0, -1); return }
-  if (k === '.' && importoRaw.value.includes('.')) return
-  if (importoRaw.value === '0' && k !== '.') { importoRaw.value = k; return }
-  const dec = importoRaw.value.split('.')[1]
-  if (dec && dec.length >= 2) return
-  importoRaw.value += k
-}
 
 async function elimina() {
   if (!editId.value) return
@@ -297,7 +306,7 @@ async function salvaInterno() {
   setTimeout(() => { toastVisible.value = false; if (editMode.value) router.back() }, 1200)
 
   if (!editMode.value) {
-    importoRaw.value = '0'; descrizione.value = ''
+    importoRaw.value = ''; descrizione.value = ''
     categoria.value = ''; dividi.value = false
     splitEqual.value = true
     state.members.forEach(m => { customAmounts[m.id] = '' })
@@ -362,137 +371,229 @@ onMounted(async () => {
   gap: 1rem;
 }
 
+/* Segmented pill Uscita / Entrata */
 .type-toggle {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 4px;
 }
 
 .type-btn {
   flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
   color: var(--text2);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
-  padding: 0.7rem;
+  padding: 0.6rem;
   transition: all 0.2s;
 }
 
 .active-out {
-  background: rgba(255, 95, 87, 0.12);
-  border-color: var(--red);
-  color: var(--red);
+  background: var(--red);
+  color: var(--bg);
 }
 
 .active-in {
-  background: rgba(48, 209, 88, 0.12);
-  border-color: var(--green);
-  color: var(--green);
+  background: var(--green);
+  color: var(--bg);
 }
 
-.amount-display {
-  display: flex;
+/* Importo hero con tastiera di sistema */
+.amount-hero {
+  padding: 0.75rem 0 0.25rem;
+  text-align: center;
+}
+
+.amount-line {
+  display: inline-flex;
   align-items: baseline;
-  justify-content: center;
-  gap: 0.25rem;
-  padding: 0.5rem;
+  gap: 0.35rem;
+  border-bottom: 2px solid var(--accent);
+  padding: 0 0.5rem 0.4rem;
+  cursor: text;
 }
 
-.amount-display.neg {
-  color: var(--red);
-}
+.amount-line.neg { color: var(--red); }
+.amount-line.pos { color: var(--green); }
 
-.amount-display.pos {
-  color: var(--green);
-}
-
-.amount-symbol {
-  font-size: 2rem;
-  font-weight: 300;
-}
-
-.amount-val {
-  font-size: 3.5rem;
-  font-weight: 700;
+.amount-sign {
   font-family: 'DM Mono', monospace;
-  line-height: 1;
+  font-size: 2rem;
+  font-weight: 500;
 }
+
+.amount-input {
+  width: 4.5ch;
+  min-width: 2ch;
+  max-width: 7ch;
+  field-sizing: content;
+  background: transparent;
+  border: none;
+  outline: none;
+  text-align: center;
+  color: var(--text);
+  caret-color: var(--accent);
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  font-size: 3.25rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.amount-input::placeholder { color: var(--text2); opacity: 0.5; }
 
 .amount-eur {
-  font-size: 1.5rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 1.6rem;
   font-weight: 500;
+  color: var(--text2);
 }
 
-.keypad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+.amount-hint {
+  font-size: 0.78rem;
+  color: var(--text2);
+  margin-top: 0.65rem;
 }
 
-.key {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  color: var(--text);
-  cursor: pointer;
-  font-family: 'Lexend', sans-serif;
-  font-size: 1.3rem;
-  font-weight: 500;
-  padding: 1rem;
-  transition: all 0.1s;
-  user-select: none;
-}
-
-.key:active {
-  background: var(--surface2);
-  transform: scale(0.95);
-}
-
-.form-card {
-  overflow: hidden;
-}
-
-.form-field {
+/* Descrizione */
+.desc-field {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.9rem 1.1rem;
+  gap: 0.75rem;
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 0.85rem 1.15rem;
 }
 
-.field-icon {
-  font-size: 1.1rem;
+.desc-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text2);
   flex-shrink: 0;
 }
 
-.field-input {
+.desc-input {
   flex: 1;
   background: transparent;
   border: none;
   color: var(--text);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
+  font-weight: 600;
   outline: none;
   width: 100%;
 }
 
-.field-select {
-  cursor: pointer;
+.desc-input::placeholder { color: var(--text2); font-weight: 400; }
+
+/* Categoria: label + chip a scorrimento */
+.field-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 2px;
 }
 
-.field-select option,
-.field-select optgroup {
+.cat-chips {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  margin: 0 -1.25rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+.cat-chips::-webkit-scrollbar { display: none; }
+
+.cat-chip {
+  flex: none;
+  width: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.8rem 0.4rem;
+  border-radius: 20px;
   background: var(--surface);
-  color: var(--text);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
 }
 
-.field-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 0 1.1rem;
+.cat-chip.sel {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
+
+.cat-chip-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-align: center;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.cat-chip.sel .cat-chip-name { color: var(--accent); }
+
+.cat-empty {
+  font-size: 0.85rem;
+  color: var(--text2);
+  padding: 0.5rem;
+}
+
+/* Data + Mese come pill affiancate */
+.dm-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.dm-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.dm-pill svg {
+  width: 19px;
+  height: 19px;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+.dm-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'Figtree', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.dm-select { cursor: pointer; appearance: none; -webkit-appearance: none; }
+.dm-select option { background: var(--surface); color: var(--text); }
 
 .split-toggle {
   background: var(--surface2);
@@ -500,7 +601,7 @@ onMounted(async () => {
   border-radius: 14px;
   color: var(--text2);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 500;
   padding: 0.85rem;
@@ -511,7 +612,7 @@ onMounted(async () => {
 .split-toggle.active {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(245, 166, 35, 0.08);
+  background: rgba(198, 113, 57, 0.08);
 }
 
 /* Split panel N-persone */
@@ -538,7 +639,7 @@ onMounted(async () => {
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--text);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.9rem;
   padding: 0.5rem 0.75rem;
   outline: none;
@@ -559,14 +660,14 @@ onMounted(async () => {
   border: none;
   border-radius: 9px;
   color: var(--text2);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
   padding: 0.5rem;
   cursor: pointer;
   transition: all 0.15s;
 }
-.sm-btn.active { background: var(--accent); color: #0e0e0e; }
+.sm-btn.active { background: var(--accent); color: #f5ead8; }
 
 .members-list {
   display: flex;
@@ -643,7 +744,7 @@ onMounted(async () => {
   border-radius: 14px;
   color: var(--text);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   padding: 0.85rem 1rem;
   text-align: left;
   transition: all 0.2s;
@@ -653,7 +754,7 @@ onMounted(async () => {
 }
 
 .split-opt.active {
-  background: rgba(245, 166, 35, 0.1);
+  background: rgba(198, 113, 57, 0.1);
   border-color: var(--accent);
 }
 
@@ -677,12 +778,12 @@ onMounted(async () => {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 100px;
-  background: rgba(245, 166, 35, 0.2);
+  background: rgba(198, 113, 57, 0.2);
   color: var(--accent);
 }
 
 .so-badge-red {
-  background: rgba(255, 95, 87, 0.15);
+  background: rgba(176, 74, 44, 0.15);
   color: var(--red);
 }
 
@@ -708,8 +809,8 @@ onMounted(async () => {
 }
 
 .error-msg {
-  background: rgba(255, 95, 87, 0.1);
-  border: 1px solid rgba(255, 95, 87, 0.3);
+  background: rgba(176, 74, 44, 0.1);
+  border: 1px solid rgba(176, 74, 44, 0.3);
   border-radius: 12px;
   color: var(--red);
   font-size: 0.85rem;
@@ -720,10 +821,10 @@ onMounted(async () => {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(245, 166, 35, 0.3);
-  color: #0e0e0e;
+  box-shadow: 0 4px 20px rgba(198, 113, 57, 0.3);
+  color: #f5ead8;
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   padding: 1rem;
@@ -745,18 +846,18 @@ onMounted(async () => {
   border-radius: 16px;
   color: var(--text2);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   padding: 0.85rem;
 }
 
 .delete-btn {
-  background: rgba(255, 95, 87, 0.1);
-  border: 1px solid rgba(255, 95, 87, 0.3);
+  background: rgba(176, 74, 44, 0.1);
+  border: 1px solid rgba(176, 74, 44, 0.3);
   border-radius: 16px;
   color: var(--red);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.85rem;

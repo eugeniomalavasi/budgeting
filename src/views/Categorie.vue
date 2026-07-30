@@ -214,7 +214,7 @@ const IconGrid = {
 .cat-name { flex: 1; font-size: 0.92rem; font-weight: 500; }
 .name-inp {
   flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-  color: var(--text); font-family: 'Lexend', sans-serif; font-size: 0.9rem; padding: 0.45rem 0.6rem; outline: none;
+  color: var(--text); font-family: 'Figtree', sans-serif; font-size: 0.9rem; padding: 0.45rem 0.6rem; outline: none;
 }
 .name-inp:focus { border-color: var(--accent); }
 .add-row { background: var(--surface2); }
@@ -237,7 +237,7 @@ const IconGrid = {
   background: none; border: 1px solid transparent; border-radius: 12px;
   padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
-:deep(.icon-cell.sel) { border-color: var(--accent); background: rgba(245,166,35,0.08); }
+:deep(.icon-cell.sel) { border-color: var(--accent); background: rgba(198, 113, 57,0.08); }
 :deep(.ic-badge) {
   width: 36px; height: 36px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;

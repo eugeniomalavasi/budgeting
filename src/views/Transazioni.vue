@@ -259,7 +259,7 @@ onMounted(async () => {
   border: 1px solid var(--border);
   border-radius: 12px;
   color: var(--text);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.9rem;
   padding: 0.65rem 2.2rem 0.65rem 2.4rem;
   outline: none;
@@ -295,7 +295,7 @@ onMounted(async () => {
   border-radius: 100px;
   color: var(--text);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0.35rem 0.85rem;
@@ -320,7 +320,7 @@ onMounted(async () => {
   border-radius: 100px;
   color: var(--text2);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.8rem;
   font-weight: 500;
   padding: 0.35rem 0.85rem;
@@ -330,7 +330,7 @@ onMounted(async () => {
 .scope-btn.active {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border-color: transparent;
-  color: #0e0e0e;
+  color: #f5ead8;
   font-weight: 700;
 }
 
@@ -347,7 +347,7 @@ onMounted(async () => {
   border-radius: 100px;
   color: var(--text2);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.78rem;
   padding: 0.28rem 0.75rem;
   transition: all 0.2s;
@@ -365,7 +365,7 @@ onMounted(async () => {
   border: 1px solid var(--border);
   border-radius: 100px;
   color: var(--text2);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.78rem;
   padding: 0.28rem 0.75rem;
   outline: none;
@@ -427,7 +427,7 @@ onMounted(async () => {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0.65rem 1.1rem 0.3rem;
-  background: rgba(245, 166, 35, 0.05);
+  background: rgba(198, 113, 57, 0.05);
   border-bottom: 1px solid var(--border);
 }
 
@@ -563,11 +563,11 @@ onMounted(async () => {
 
 .edit-btn {
   width: 100%;
-  background: rgba(245, 166, 35, 0.1);
-  border: 1px solid rgba(245, 166, 35, 0.3);
+  background: rgba(198, 113, 57, 0.1);
+  border: 1px solid rgba(198, 113, 57, 0.3);
   border-radius: 14px;
   color: var(--accent);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.8rem;
@@ -576,11 +576,11 @@ onMounted(async () => {
 
 .delete-btn {
   width: 100%;
-  background: rgba(255, 95, 87, 0.1);
-  border: 1px solid rgba(255, 95, 87, 0.3);
+  background: rgba(176, 74, 44, 0.1);
+  border: 1px solid rgba(176, 74, 44, 0.3);
   border-radius: 14px;
   color: var(--red);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.8rem;
@@ -593,7 +593,7 @@ onMounted(async () => {
   border: 1px solid var(--border);
   border-radius: 14px;
   color: var(--text2);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   padding: 0.8rem;
   cursor: pointer;

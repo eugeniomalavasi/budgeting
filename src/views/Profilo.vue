@@ -319,7 +319,7 @@ async function logout() {
 .avatar-lg {
   width: 56px; height: 56px; border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #0e0e0e; font-weight: 700; font-size: 1.5rem;
+  color: #f5ead8; font-weight: 700; font-size: 1.5rem;
   display: flex; align-items: center; justify-content: center; flex: 0 0 56px;
 }
 .id-name { font-size: 1.1rem; font-weight: 600; }
@@ -330,7 +330,7 @@ async function logout() {
 
 .inp {
   background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
-  color: var(--text); font-family: 'Lexend', sans-serif; font-size: 0.95rem;
+  color: var(--text); font-family: 'Figtree', sans-serif; font-size: 0.95rem;
   padding: 0.75rem 1rem; outline: none; width: 100%; transition: border-color 0.2s;
 }
 .inp:focus { border-color: var(--accent); }
@@ -348,31 +348,31 @@ async function logout() {
 
 .btn-sm {
   background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
-  color: var(--text); font-family: 'Lexend', sans-serif; font-weight: 600; font-size: 0.9rem;
+  color: var(--text); font-family: 'Figtree', sans-serif; font-weight: 600; font-size: 0.9rem;
   padding: 0 1rem; cursor: pointer; white-space: nowrap;
 }
 .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-full {
   margin-top: 4px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0e0e0e;
-  border: none; border-radius: 12px; font-family: 'Lexend', sans-serif;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #f5ead8;
+  border: none; border-radius: 12px; font-family: 'Figtree', sans-serif;
   font-weight: 700; font-size: 0.95rem; padding: 0.8rem; cursor: pointer;
 }
 .btn-full:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-danger {
   margin-top: 2px;
-  background: rgba(255,95,87,0.1); border: 1px solid rgba(255,95,87,0.3);
-  border-radius: 12px; color: var(--red); font-family: 'Lexend', sans-serif;
+  background: rgba(176, 74, 44,0.1); border: 1px solid rgba(176, 74, 44,0.3);
+  border-radius: 12px; color: var(--red); font-family: 'Figtree', sans-serif;
   font-weight: 600; font-size: 0.88rem; padding: 0.7rem; cursor: pointer;
 }
 .btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-logout {
   margin-top: 0.5rem;
-  background: rgba(255,95,87,0.1); border: 1px solid rgba(255,95,87,0.3);
-  border-radius: 14px; color: var(--red); font-family: 'Lexend', sans-serif;
+  background: rgba(176, 74, 44,0.1); border: 1px solid rgba(176, 74, 44,0.3);
+  border-radius: 14px; color: var(--red); font-family: 'Figtree', sans-serif;
   font-weight: 600; font-size: 0.95rem; padding: 0.9rem; cursor: pointer;
 }
 .btn-logout:active { transform: scale(0.98); }
@@ -382,14 +382,14 @@ async function logout() {
   display: flex; align-items: center; justify-content: space-between;
   background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
   padding: 0.7rem 0.9rem; cursor: pointer;
-  font-family: 'Lexend', sans-serif; color: var(--text);
+  font-family: 'Figtree', sans-serif; color: var(--text);
 }
-.group-row.active { border-color: var(--accent); background: rgba(245,166,35,0.08); }
+.group-row.active { border-color: var(--accent); background: rgba(198, 113, 57,0.08); }
 .group-name { font-size: 0.9rem; font-weight: 600; }
 .group-badge { font-size: 0.7rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
 .group-switch { font-size: 0.8rem; color: var(--text2); }
 
-.invite-incoming { border-color: rgba(245,166,35,0.4); }
+.invite-incoming { border-color: rgba(198, 113, 57,0.4); }
 .invite-row {
   display: flex; align-items: center; justify-content: space-between;
   gap: 0.75rem; flex-wrap: wrap;
@@ -397,14 +397,14 @@ async function logout() {
 .invite-text { font-size: 0.9rem; }
 .invite-actions { display: flex; gap: 0.4rem; }
 .btn-accept {
-  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0e0e0e;
-  border: none; border-radius: 10px; font-family: 'Lexend', sans-serif; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #f5ead8;
+  border: none; border-radius: 10px; font-family: 'Figtree', sans-serif; font-weight: 700;
   font-size: 0.85rem; padding: 0.45rem 0.9rem; cursor: pointer;
 }
 .btn-decline {
   background: transparent; color: var(--text2);
   border: 1px solid var(--border); border-radius: 10px;
-  font-family: 'Lexend', sans-serif; font-weight: 600; font-size: 0.85rem;
+  font-family: 'Figtree', sans-serif; font-weight: 600; font-size: 0.85rem;
   padding: 0.45rem 0.9rem; cursor: pointer;
 }
 
@@ -423,7 +423,7 @@ async function logout() {
 .hint { font-size: 0.75rem; color: var(--text2); line-height: 1.35; }
 
 .nav-link {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between;
   text-decoration: none; color: var(--text); cursor: pointer;
 }
 .nav-link-text { font-size: 0.95rem; font-weight: 600; }

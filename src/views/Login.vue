@@ -187,7 +187,7 @@ function messageFor(e) {
 .login-glow {
   position: absolute;
   width: 320px; height: 320px;
-  background: radial-gradient(circle, rgba(245,166,35,0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(198, 113, 57,0.18) 0%, transparent 70%);
   top: 15%; left: 50%; transform: translateX(-50%);
   pointer-events: none;
 }
@@ -213,8 +213,8 @@ function messageFor(e) {
 
 .login-notice {
   width: 100%;
-  background: rgba(48,209,88,0.1);
-  border: 1px solid rgba(48,209,88,0.3);
+  background: rgba(122, 138, 94,0.1);
+  border: 1px solid rgba(122, 138, 94,0.3);
   border-radius: 12px;
   color: var(--green);
   font-size: 0.85rem;
@@ -243,7 +243,7 @@ function messageFor(e) {
   border: 1px solid var(--border);
   border-radius: 12px;
   color: var(--text);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   padding: 0.75rem 1rem;
   outline: none;
@@ -278,7 +278,7 @@ function messageFor(e) {
   background: none;
   border: none;
   color: var(--accent);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -287,8 +287,8 @@ function messageFor(e) {
 .link-btn.forgot { align-self: flex-end; margin-top: 2px; font-size: 0.8rem; }
 
 .login-error {
-  background: rgba(255,95,87,0.1);
-  border: 1px solid rgba(255,95,87,0.3);
+  background: rgba(176, 74, 44,0.1);
+  border: 1px solid rgba(176, 74, 44,0.3);
   border-radius: 10px;
   color: var(--red);
   font-size: 0.85rem;
@@ -297,10 +297,10 @@ function messageFor(e) {
 
 .login-btn {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #0e0e0e;
+  color: #f5ead8;
   border: none;
   border-radius: 14px;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   padding: 0.9rem;
@@ -336,7 +336,7 @@ function messageFor(e) {
   border: 1px solid var(--border);
   border-radius: 14px;
   color: var(--text);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.85rem;

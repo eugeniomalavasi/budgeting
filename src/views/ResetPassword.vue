@@ -78,7 +78,7 @@ async function submit() {
 <style scoped>
 /* Riusa lo stile di Login: qui ripetiamo solo l'essenziale. */
 .login-page { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; overflow: hidden; background: var(--bg); }
-.login-glow { position: absolute; width: 320px; height: 320px; background: radial-gradient(circle, rgba(245,166,35,0.18) 0%, transparent 70%); top: 15%; left: 50%; transform: translateX(-50%); pointer-events: none; }
+.login-glow { position: absolute; width: 320px; height: 320px; background: radial-gradient(circle, rgba(198, 113, 57,0.18) 0%, transparent 70%); top: 15%; left: 50%; transform: translateX(-50%); pointer-events: none; }
 .login-box { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
 .login-logo { width: 72px; height: 72px; border-radius: 18px; margin-bottom: 0.25rem; }
 .login-title { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; }
@@ -87,12 +87,12 @@ async function submit() {
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field label { font-size: 0.78rem; font-weight: 600; color: var(--text2); letter-spacing: 0.04em; text-transform: uppercase; }
 .input-wrap { position: relative; display: flex; align-items: center; }
-.input-wrap input { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Lexend', sans-serif; font-size: 0.95rem; padding: 0.75rem 2.8rem 0.75rem 1rem; outline: none; transition: border-color 0.2s; width: 100%; }
+.input-wrap input { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Figtree', sans-serif; font-size: 0.95rem; padding: 0.75rem 2.8rem 0.75rem 1rem; outline: none; transition: border-color 0.2s; width: 100%; }
 .input-wrap input:focus { border-color: var(--accent); }
 .eye-btn { position: absolute; right: 0.75rem; background: none; border: none; color: var(--text2); cursor: pointer; padding: 4px; display: flex; align-items: center; }
 .eye-btn svg { width: 18px; height: 18px; }
-.login-error { background: rgba(255,95,87,0.1); border: 1px solid rgba(255,95,87,0.3); border-radius: 10px; color: var(--red); font-size: 0.85rem; padding: 0.6rem 0.9rem; }
-.login-btn { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0e0e0e; border: none; border-radius: 14px; font-family: 'Lexend', sans-serif; font-size: 1rem; font-weight: 700; padding: 0.9rem; cursor: pointer; box-shadow: 0 4px 20px var(--accent-glow); }
+.login-error { background: rgba(176, 74, 44,0.1); border: 1px solid rgba(176, 74, 44,0.3); border-radius: 10px; color: var(--red); font-size: 0.85rem; padding: 0.6rem 0.9rem; }
+.login-btn { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #f5ead8; border: none; border-radius: 14px; font-family: 'Figtree', sans-serif; font-size: 1rem; font-weight: 700; padding: 0.9rem; cursor: pointer; box-shadow: 0 4px 20px var(--accent-glow); }
 .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.login-notice { width: 100%; background: rgba(48,209,88,0.1); border: 1px solid rgba(48,209,88,0.3); border-radius: 12px; color: var(--green); font-size: 0.9rem; padding: 1rem; text-align: center; }
+.login-notice { width: 100%; background: rgba(122, 138, 94,0.1); border: 1px solid rgba(122, 138, 94,0.3); border-radius: 12px; color: var(--green); font-size: 0.9rem; padding: 1rem; text-align: center; }
 </style>

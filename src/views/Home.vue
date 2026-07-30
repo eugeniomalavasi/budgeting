@@ -232,9 +232,10 @@ watch(() => state.currentMonthId, async (newId) => {
 }
 
 .header-greeting {
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 .header-sub {
@@ -248,8 +249,8 @@ watch(() => state.currentMonthId, async (newId) => {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  background: linear-gradient(135deg, rgba(245, 166, 35, 0.12), rgba(255, 124, 42, 0.08));
-  border: 1px solid rgba(245, 166, 35, 0.25);
+  background: linear-gradient(135deg, rgba(198, 113, 57, 0.12), rgba(214, 127, 72, 0.08));
+  border: 1px solid rgba(198, 113, 57, 0.25);
   border-radius: 14px;
   padding: 0.5rem 0.9rem;
   flex-shrink: 0;
@@ -289,7 +290,7 @@ watch(() => state.currentMonthId, async (newId) => {
   border-radius: 100px;
   color: var(--text2);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.8rem;
   font-weight: 500;
   padding: 0.3rem 0.85rem;
@@ -299,7 +300,7 @@ watch(() => state.currentMonthId, async (newId) => {
 .month-chip.active {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border-color: transparent;
-  color: #0e0e0e;
+  color: #f5ead8;
   font-weight: 600;
   box-shadow: 0 2px 12px var(--accent-glow);
 }
@@ -326,13 +327,13 @@ watch(() => state.currentMonthId, async (newId) => {
 }
 
 .split-summary.card-green {
-  border-color: rgba(48, 209, 88, 0.3);
-  background: linear-gradient(135deg, rgba(48, 209, 88, 0.08), var(--surface));
+  border-color: rgba(122, 138, 94, 0.3);
+  background: linear-gradient(135deg, rgba(122, 138, 94, 0.08), var(--surface));
 }
 
 .split-summary.card-red {
-  border-color: rgba(255, 95, 87, 0.3);
-  background: linear-gradient(135deg, rgba(255, 95, 87, 0.08), var(--surface));
+  border-color: rgba(176, 74, 44, 0.3);
+  background: linear-gradient(135deg, rgba(176, 74, 44, 0.08), var(--surface));
 }
 
 .split-summary-icon {
@@ -596,7 +597,7 @@ watch(() => state.currentMonthId, async (newId) => {
   border-bottom: 1px solid var(--border);
   padding: 0.9rem 1.1rem;
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   color: var(--text);
 }
 .group-balance-row:last-child { border-bottom: none; }
@@ -679,11 +680,11 @@ watch(() => state.currentMonthId, async (newId) => {
 
 .edit-btn {
   width: 100%;
-  background: rgba(245, 166, 35, 0.12);
-  border: 1px solid rgba(245, 166, 35, 0.3);
+  background: rgba(198, 113, 57, 0.12);
+  border: 1px solid rgba(198, 113, 57, 0.3);
   border-radius: 14px;
   color: var(--accent);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.8rem;
@@ -696,7 +697,7 @@ watch(() => state.currentMonthId, async (newId) => {
   border: 1px solid var(--border);
   border-radius: 14px;
   color: var(--text2);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   padding: 0.8rem;
   cursor: pointer;

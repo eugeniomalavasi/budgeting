@@ -214,11 +214,11 @@ onMounted(async () => { await loadSharedExpenses() })
 }
 
 .card-green {
-  border-color: rgba(48, 209, 88, 0.3);
+  border-color: rgba(122, 138, 94, 0.3);
 }
 
 .card-red {
-  border-color: rgba(255, 95, 87, 0.3);
+  border-color: rgba(176, 74, 44, 0.3);
 }
 
 .saldo-icon {
@@ -252,8 +252,8 @@ onMounted(async () => { await loadSharedExpenses() })
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
   border-radius: 12px;
-  color: #0e0e0e;
-  font-family: 'Lexend', sans-serif;
+  color: #f5ead8;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.9rem;
   font-weight: 700;
   padding: 0.65rem 1.25rem;
@@ -478,7 +478,7 @@ onMounted(async () => { await loadSharedExpenses() })
   border-radius: 12px;
   color: var(--text);
   cursor: pointer;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   padding: 0.7rem 0.9rem;
   text-align: left;
   transition: all 0.2s;
@@ -488,7 +488,7 @@ onMounted(async () => { await loadSharedExpenses() })
 }
 
 .split-opt.active {
-  background: rgba(245, 166, 35, 0.1);
+  background: rgba(198, 113, 57, 0.1);
   border-color: var(--accent);
 }
 
@@ -508,12 +508,12 @@ onMounted(async () => { await loadSharedExpenses() })
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 100px;
-  background: rgba(245, 166, 35, 0.2);
+  background: rgba(198, 113, 57, 0.2);
   color: var(--accent);
 }
 
 .so-badge-red {
-  background: rgba(255, 95, 87, 0.15);
+  background: rgba(176, 74, 44, 0.15);
   color: var(--red);
 }
 
@@ -534,11 +534,11 @@ onMounted(async () => { await loadSharedExpenses() })
 
 .edit-mov-btn {
   width: 100%;
-  background: rgba(245, 166, 35, 0.1);
-  border: 1px solid rgba(245, 166, 35, 0.3);
+  background: rgba(198, 113, 57, 0.1);
+  border: 1px solid rgba(198, 113, 57, 0.3);
   border-radius: 14px;
   color: var(--accent);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.8rem;
@@ -550,8 +550,8 @@ onMounted(async () => { await loadSharedExpenses() })
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
   border-radius: 14px;
-  color: #0e0e0e;
-  font-family: 'Lexend', sans-serif;
+  color: #f5ead8;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 700;
   padding: 0.85rem;
@@ -564,11 +564,11 @@ onMounted(async () => { await loadSharedExpenses() })
 
 .settle-single-btn {
   width: 100%;
-  background: rgba(48, 209, 88, 0.12);
-  border: 1px solid rgba(48, 209, 88, 0.3);
+  background: rgba(122, 138, 94, 0.12);
+  border: 1px solid rgba(122, 138, 94, 0.3);
   border-radius: 14px;
   color: var(--green);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.8rem;
@@ -577,11 +577,11 @@ onMounted(async () => { await loadSharedExpenses() })
 
 .delete-btn {
   width: 100%;
-  background: rgba(255, 95, 87, 0.1);
-  border: 1px solid rgba(255, 95, 87, 0.3);
+  background: rgba(176, 74, 44, 0.1);
+  border: 1px solid rgba(176, 74, 44, 0.3);
   border-radius: 14px;
   color: var(--red);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.8rem;
@@ -594,7 +594,7 @@ onMounted(async () => { await loadSharedExpenses() })
   border: 1px solid var(--border);
   border-radius: 14px;
   color: var(--text2);
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 0.95rem;
   padding: 0.8rem;
   cursor: pointer;

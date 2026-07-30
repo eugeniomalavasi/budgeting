@@ -36,7 +36,7 @@
            prima di aprire /aggiungi, così resetta cache/lock/stato in memoria
            che a volte bloccavano il salvataggio del movimento. -->
       <a href="/#/aggiungi" class="nav-item nav-add" @click.prevent="apriAggiungi">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
           class="nav-add-svg">
           <path d="M12 5v14M5 12h14" />
         </svg>
@@ -87,20 +87,23 @@ function apriAggiungi() {
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #0e0e0e;
-  --surface: #181818;
-  --surface2: #222222;
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #f5f0e8;
-  --text2: #8a8070;
-  --accent: #f5a623;
-  --accent2: #ff7c2a;
-  --accent-glow: rgba(245, 166, 35, 0.25);
-  --red: #ff5f57;
-  --green: #30d158;
+  /* Organic — tema chiaro caldo */
+  --bg: #f5ead8;
+  --surface: #ebddc5;
+  --surface2: #f9f4ed;
+  --border: rgba(32, 30, 29, 0.14);
+  --text: #201e1d;
+  --text2: #82796a;
+  --accent: #c67139;
+  --accent2: #d67f48;
+  --accent-glow: rgba(198, 113, 57, 0.30);
+  --red: #b04a2c;
+  --green: #5f6f45;
+  --font-body: 'Figtree', system-ui, sans-serif;
+  --font-display: 'Caprasimo', Georgia, serif;
   --nav-h: 72px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -116,10 +119,17 @@ html,
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Lexend', sans-serif;
+  font-family: var(--font-body);
   height: 100%;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Headings usano il font display Caprasimo dell'Organic design system */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 #app {
@@ -151,16 +161,16 @@ body {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #0e0e0e;
+  background: var(--accent);
+  color: var(--bg);
   font-weight: 700;
   font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 14px var(--accent-glow);
+  border: 2px solid var(--bg);
 }
 .avatar-btn { position: relative; }
 .avatar-btn:active { transform: scale(0.94); }
@@ -182,7 +192,7 @@ body {
   width: 100%;
   max-width: 480px;
   height: calc(var(--nav-h) + var(--safe-bottom));
-  background: rgba(24, 24, 24, 0.95);
+  background: color-mix(in srgb, var(--surface) 88%, #fff);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -230,20 +240,22 @@ body {
 }
 
 .nav-add {
-  width: 52px;
-  height: 52px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  width: 60px;
+  height: 60px;
+  background: var(--accent);
   border-radius: 50%;
-  flex: 0 0 52px;
-  color: #0e0e0e !important;
-  box-shadow: 0 4px 20px var(--accent-glow);
+  flex: 0 0 60px;
+  color: var(--bg) !important;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent);
   padding: 0;
   gap: 0;
+  margin-top: -32px;
+  align-self: center;
 }
 
 .nav-add-svg {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
 }
 
 /* ——— PAGE ——— */
@@ -254,8 +266,9 @@ body {
 
 .card {
   background: var(--surface);
-  border-radius: 20px;
-  border: 1px solid var(--border);
+  border-radius: 24px;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(46, 43, 37, 0.10);
 }
 
 .amount {
