@@ -272,6 +272,23 @@ export async function updateCategory(id, updates) {
   if (idx !== -1 && data?.[0]) state.categories[idx] = data[0]
 }
 
+// Riordina le categorie di un gruppo (uscita/entrata) secondo l'ordine degli id
+// passati, aggiornando il campo `sort` in modo ottimistico e persistendolo.
+export async function reorderCategories(orderedIds) {
+  // Aggiornamento ottimistico locale.
+  orderedIds.forEach((id, i) => {
+    const c = state.categories.find(c => c.id === id)
+    if (c) c.sort = i
+  })
+  // Persisti ogni nuovo indice (upsert dei soli sort).
+  const updates = orderedIds.map((id, i) =>
+    supabase.from('categories').update({ sort: i }).eq('id', id)
+  )
+  const results = await Promise.all(updates)
+  const err = results.find(r => r.error)?.error
+  if (err) throw err
+}
+
 export async function deleteCategory(id) {
   // Soft delete: la categoria resta nel DB (recuperabile) ma sparisce dall'app.
   const { error } = await supabase

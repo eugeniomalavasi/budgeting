@@ -81,14 +81,14 @@
               <div class="mt-detail-section">
                 <p class="mt-detail-title">📥 Entrate</p>
                 <div v-for="[cat, val] in getCatEntrate(m.id)" :key="cat" class="mt-detail-row">
-                  <span>{{ CAT_EMOJI[cat]||'📦' }} {{ cat }}</span>
+                  <span class="mt-detail-cat"><CatIcon :categoria="cat" style="width:26px;height:26px;border-radius:9px;flex-shrink:0" /> {{ cat }}</span>
                   <span class="pos amount">{{ fmt(val) }}</span>
                 </div>
               </div>
               <div class="mt-detail-section">
                 <p class="mt-detail-title">📤 Uscite</p>
                 <div v-for="[cat, val] in getCatUscite(m.id)" :key="cat" class="mt-detail-row">
-                  <span>{{ CAT_EMOJI[cat]||'📦' }} {{ cat }}</span>
+                  <span class="mt-detail-cat"><CatIcon :categoria="cat" style="width:26px;height:26px;border-radius:9px;flex-shrink:0" /> {{ cat }}</span>
                   <span class="neg amount">{{ fmt(val) }}</span>
                 </div>
               </div>
@@ -108,8 +108,7 @@
       <!-- Tabella categorie ranking -->
       <div class="card cat-table">
         <div v-for="[cat, val] in topCatAll" :key="cat" class="cat-row">
-          <span class="cat-dot" :style="{ background: CAT_COLORS[cat]||'#94a3b8' }"></span>
-          <span class="cat-emoji">{{ CAT_EMOJI[cat]||'📦' }}</span>
+          <CatIcon :categoria="cat" style="width:30px;height:30px;border-radius:10px;flex-shrink:0" />
           <span class="cat-name">{{ cat }}</span>
           <span class="cat-bar-wrap">
             <div class="cat-bar" :style="{ width: (val/topCatAll[0][1]*100)+'%', background: CAT_COLORS[cat]||'#94a3b8' }"></div>
@@ -129,6 +128,7 @@ import {
   LineElement, BarElement, ArcElement, Tooltip, Legend, Filler
 } from 'chart.js'
 import { state, loadMonths, loadTransactions, fmt, CAT_COLORS, CAT_EMOJI } from '../lib/store.js'
+import CatIcon from '../components/CatIcon.vue'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, ArcElement, Tooltip, Legend, Filler)
@@ -323,6 +323,7 @@ onMounted(async () => {
 .cat-row:last-child { border-bottom:none; }
 .cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .cat-emoji { font-size:1rem; flex-shrink:0; }
+.mt-detail-cat { display:flex; align-items:center; gap:0.5rem; }
 .cat-name { font-size:0.85rem; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cat-bar-wrap { width:60px; height:4px; background:rgba(32, 30, 29,0.08); border-radius:100px; overflow:hidden; flex-shrink:0; }
 .cat-bar { height:100%; border-radius:100px; }

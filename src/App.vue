@@ -187,6 +187,7 @@ h1, h2, h3, h4, h5, h6 {
    sempre ancorata in basso (niente drift con la toolbar del browser mobile). */
 .scroll-area {
   flex: 1 1 auto;
+  min-height: 0;
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;

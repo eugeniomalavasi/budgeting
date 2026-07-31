@@ -10,8 +10,9 @@
     <div class="px">
       <template v-for="grp in groups" :key="grp.kind">
         <p class="section-label">{{ grp.label }}</p>
-        <div class="card list">
-          <div v-for="c in grp.items" :key="c.id" class="cat-row">
+        <div class="card list" :data-kind="grp.kind">
+          <div v-for="c in orderedItems(grp)" :key="c.id" class="cat-row"
+            :data-id="c.id" :class="{ dragging: dragId === c.id }">
             <template v-if="editId === c.id">
               <button type="button" class="icon-trigger" @click="togglePicker('edit')">
                 <IconPreview :iconKey="editIcon" :color="editColor" :emoji="c.emoji" :name="c.name" />
@@ -21,6 +22,10 @@
               <button class="mini-btn" @click="chiudiEdit">✕</button>
             </template>
             <template v-else>
+              <button class="drag-handle" aria-label="Trascina per riordinare"
+                @pointerdown="startDrag($event, grp.kind, c.id)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h16M4 15h16"/></svg>
+              </button>
               <CatIcon :categoria="c.name" />
               <span class="cat-name">{{ c.name }}</span>
               <button class="mini-btn" @click="apriEdit(c)" aria-label="Modifica">✏️</button>
@@ -59,7 +64,7 @@ import { ref, reactive, computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   state, categorieUscite, categorieEntrate,
-  addCategory, updateCategory, deleteCategory,
+  addCategory, updateCategory, deleteCategory, reorderCategories,
 } from '../lib/store.js'
 import { ICON_SET, ICON_MAP } from '../lib/icons.js'
 import CatIcon from '../components/CatIcon.vue'
@@ -87,6 +92,68 @@ const groups = computed(() => [
 
 function itemKind(id) {
   return state.categories.find(c => c.id === id)?.kind
+}
+
+// —— Drag & drop per riordinare le categorie (touch + mouse) ——
+const dragId = ref(null)
+const dragKind = ref(null)
+const dragOrder = ref(null)   // array di id nell'ordine corrente durante il drag
+
+// Ordine mostrato: durante il drag usa l'ordine live, altrimenti quello dello store.
+function orderedItems(grp) {
+  if (dragKind.value === grp.kind && dragOrder.value) {
+    const byId = new Map(grp.items.map(c => [c.id, c]))
+    return dragOrder.value.map(id => byId.get(id)).filter(Boolean)
+  }
+  return grp.items
+}
+
+function startDrag(e, kind, id) {
+  // Non avviare il drag mentre si sta modificando una categoria.
+  if (editId.value) return
+  e.preventDefault()
+  dragKind.value = kind
+  dragId.value = id
+  const items = kind === 'uscita' ? categorieUscite.value : categorieEntrate.value
+  dragOrder.value = items.map(c => c.id)
+  window.addEventListener('pointermove', onDragMove)
+  window.addEventListener('pointerup', endDrag)
+  window.addEventListener('pointercancel', endDrag)
+}
+
+function onDragMove(e) {
+  if (!dragId.value) return
+  const el = document.elementFromPoint(e.clientX, e.clientY)
+  const row = el?.closest('.cat-row[data-id]')
+  if (!row) return
+  const overId = row.getAttribute('data-id')
+  if (!overId || overId === dragId.value) return
+  const order = dragOrder.value.slice()
+  const from = order.indexOf(dragId.value)
+  const to = order.indexOf(overId)
+  if (from === -1 || to === -1) return
+  order.splice(from, 1)
+  order.splice(to, 0, dragId.value)
+  dragOrder.value = order
+}
+
+async function endDrag() {
+  window.removeEventListener('pointermove', onDragMove)
+  window.removeEventListener('pointerup', endDrag)
+  window.removeEventListener('pointercancel', endDrag)
+  const order = dragOrder.value
+  const kind = dragKind.value
+  dragId.value = null
+  dragKind.value = null
+  dragOrder.value = null
+  if (!order) return
+  // Persisti solo se l'ordine è effettivamente cambiato.
+  const items = kind === 'uscita' ? categorieUscite.value : categorieEntrate.value
+  const current = items.map(c => c.id)
+  if (current.join(',') === order.join(',')) return
+  try {
+    await reorderCategories(order)
+  } catch (e) { msg.value = 'Errore nel riordino.' }
 }
 
 function togglePicker(which) {
@@ -212,6 +279,17 @@ const IconGrid = {
 }
 .cat-row:last-child { border-bottom: none; }
 .cat-name { flex: 1; font-size: 0.92rem; font-weight: 500; }
+.drag-handle {
+  background: none; border: none; padding: 2px; margin-left: -4px;
+  color: var(--text2); cursor: grab; flex-shrink: 0; touch-action: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.drag-handle svg { width: 20px; height: 20px; }
+.drag-handle:active { cursor: grabbing; }
+.cat-row.dragging {
+  background: var(--surface2); opacity: 0.9;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12); border-radius: 10px;
+}
 .name-inp {
   flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
   color: var(--text); font-family: 'Figtree', sans-serif; font-size: 0.9rem; padding: 0.45rem 0.6rem; outline: none;
