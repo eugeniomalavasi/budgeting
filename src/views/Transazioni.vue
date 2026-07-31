@@ -98,7 +98,7 @@ import { useRouter } from 'vue-router'
 import CatIcon from '../components/CatIcon.vue'
 import {
   state, loadMonths, loadTransactions,
-  deleteTransaction, fmtFull, CATEGORIE_USCITE, CATEGORIE_ENTRATE
+  deleteTransaction, fmtFull, categorieUscite, categorieEntrate
 } from '../lib/store.js'
 
 const router = useRouter()
@@ -119,7 +119,9 @@ const filtri = [
   { val: 'entrata', label: 'Entrate' },
 ]
 
-const categorie = computed(() => [...CATEGORIE_USCITE, ...CATEGORIE_ENTRATE].sort())
+const categorie = computed(() =>
+  [...categorieUscite.value, ...categorieEntrate.value].map(c => c.name).sort()
+)
 
 // Mesi in ordine decrescente (più recente prima)
 const mesiDesc = computed(() => [...state.months].reverse())
