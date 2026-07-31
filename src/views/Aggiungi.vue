@@ -64,11 +64,16 @@
 
       <div v-if="dividi && tipo === 'uscita' && state.members.length >= 2" class="split-panel card">
         <!-- Chi ha pagato -->
-        <div class="split-row">
-          <span class="split-label">Ha pagato</span>
-          <select v-model="payer" class="split-select">
+        <div class="payer-field">
+          <svg class="payer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div class="payer-body">
+            <span class="payer-label">Ha pagato</span>
+            <span class="payer-name">{{ payerName }}</span>
+          </div>
+          <select v-model="payer" class="payer-select">
             <option v-for="m in state.members" :key="m.id" :value="m.id">{{ nameOf(m) }}</option>
           </select>
+          <svg class="payer-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </div>
 
         <!-- Modalità di divisione -->
@@ -170,6 +175,12 @@ function onImporto(e) {
 }
 
 function nameOf(m) { return m.id === state.user?.id ? 'Tu' : m.name }
+
+// Nome del pagatore selezionato, per il riepilogo "a colpo d'occhio".
+const payerName = computed(() => {
+  const m = state.members.find(x => x.id === payer.value)
+  return m ? nameOf(m) : '—'
+})
 
 // Default: pago io, tutti partecipano.
 function initSplitDefaults() {
@@ -646,6 +657,62 @@ onMounted(async () => {
   cursor: pointer;
 }
 .split-select option { background: var(--surface); color: var(--text); }
+
+/* Campo "Ha pagato" evidenziato: nome del pagatore leggibile a colpo d'occhio */
+.payer-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: rgba(198, 113, 57, 0.1);
+  border: 1px solid rgba(198, 113, 57, 0.3);
+  border-radius: 12px;
+  padding: 0.65rem 0.85rem;
+}
+.payer-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.payer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.payer-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.payer-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.payer-chevron {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+/* Il select copre l'intero campo ma resta invisibile: apre il menu nativo al tap */
+.payer-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.payer-select option { background: var(--surface); color: var(--text); }
 
 .split-mode {
   display: flex;

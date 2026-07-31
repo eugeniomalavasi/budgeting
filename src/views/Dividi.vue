@@ -6,7 +6,11 @@
 
     <div class="px">
       <div class="saldo-card card" :class="saldoCondiviso >= 0 ? 'card-green' : 'card-red'">
-        <div class="saldo-icon">{{ Math.abs(saldoCondiviso) < 0.01 ? '🤝' : (saldoCondiviso > 0 ? '🎉' : '😅') }}</div>
+        <div class="saldo-icon">
+          <svg v-if="Math.abs(saldoCondiviso) < 0.01" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+          <svg v-else-if="saldoCondiviso > 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 18l-9.5-9.5-5 5L1 6"/><path d="M17 18h6v-6"/></svg>
+        </div>
         <div v-if="saldoCondiviso > 0.01" class="saldo-text">
           <span class="saldo-desc">{{ coupleMode ? nomeAltro + ' ti deve' : 'Ti devono in totale' }}</span>
           <span class="saldo-amount pos amount">{{ fmtFull(saldoCondiviso) }}</span>
@@ -68,7 +72,10 @@
             </div>
             <div class="sr-right">
               <span class="sr-total">{{ fmtFull(s.importo_totale) }}</span>
-              <span class="settled-badge">✓ Saldato</span>
+              <span class="settled-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                Saldato
+              </span>
             </div>
           </div>
         </div>
@@ -98,11 +105,18 @@
             <div class="sheet-row"><span>Data</span><span>{{ formatData(selected.created_at) }}</span></div>
           </div>
 
-          <button class="edit-mov-btn" @click="modificaMovimento(selected)">✏️ Modifica movimento e suddivisione</button>
-          <button v-if="!selected.settled" class="settle-single-btn" @click="pareggiaSingolo(selected)">
-            ✓ Segna come saldato
+          <button class="edit-mov-btn" @click="modificaMovimento(selected)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+            Modifica movimento e suddivisione
           </button>
-          <button class="delete-btn" @click="eliminaMovimento(selected)">🗑 Elimina movimento</button>
+          <button v-if="!selected.settled" class="settle-single-btn" @click="pareggiaSingolo(selected)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            Segna come saldato
+          </button>
+          <button class="delete-btn" @click="eliminaMovimento(selected)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            Elimina movimento
+          </button>
           <button class="close-btn" @click="selected = null">Chiudi</button>
         </div>
       </div>
@@ -223,6 +237,29 @@ onMounted(async () => { await loadSharedExpenses() })
 
 .saldo-icon {
   font-size: 2rem;
+}
+
+.saldo-icon svg {
+  width: 34px;
+  height: 34px;
+  color: v-bind("saldoCondiviso < -0.01 ? 'var(--red)' : 'var(--green)'");
+}
+
+.edit-mov-btn,
+.settle-single-btn,
+.delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.edit-mov-btn svg,
+.settle-single-btn svg,
+.delete-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .saldo-text {
@@ -360,6 +397,14 @@ onMounted(async () => { await loadSharedExpenses() })
   font-size: 0.72rem;
   color: var(--green);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.settled-badge svg {
+  width: 13px;
+  height: 13px;
 }
 
 .empty-state {
