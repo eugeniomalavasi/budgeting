@@ -42,7 +42,9 @@
       <template v-else>
         <div class="summary-row">
           <span class="summary-count">{{ transazioniFiltrate.length }} movimenti</span>
-          <span class="amount" :class="totale >= 0 ? 'pos' : 'neg'">{{ fmtFull(totale) }}</span>
+          <span class="summary-totals">
+            <span v-for="tot in totali" :key="tot.code" class="amount" :class="tot.value >= 0 ? 'pos' : 'neg'">{{ fmtFull(tot.value, tot.code) }}</span>
+          </span>
         </div>
 
         <div class="tx-list card" v-if="transazioniFiltrate.length">
@@ -55,7 +57,12 @@
                 <span class="tx-desc">{{ tx.descrizione }}</span>
                 <span class="tx-meta">{{ tx.categoria }} · {{ formatData(tx.data) }}</span>
               </div>
-              <span class="tx-amount amount" :class="tx.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(tx.importo) }}</span>
+              <span class="tx-amount-wrap">
+                <span class="tx-amount amount" :class="tx.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(tx.importo, tx.valuta) }}</span>
+                <span v-if="tx.valuta_originale && tx.valuta_originale !== tx.valuta" class="tx-orig">
+                  {{ fmtFull(tx.importo_originale, tx.valuta_originale) }}
+                </span>
+              </span>
             </div>
           </template>
         </div>
@@ -74,9 +81,12 @@
           <div class="sheet-handle"></div>
           <CatIcon :categoria="selected.categoria" style="width:56px;height:56px;border-radius:16px" />
           <p class="sheet-desc">{{ selected.descrizione }}</p>
-          <p class="sheet-amount amount" :class="selected.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(selected.importo) }}
+          <p class="sheet-amount amount" :class="selected.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(selected.importo, selected.valuta) }}
           </p>
           <div class="sheet-details">
+            <div v-if="selected.valuta_originale && selected.valuta_originale !== selected.valuta" class="sheet-row">
+              <span>Importo originale</span><span>{{ fmtFull(selected.importo_originale, selected.valuta_originale) }}</span>
+            </div>
             <div class="sheet-row"><span>Categoria</span><span>{{ selected.categoria }}</span></div>
             <div class="sheet-row"><span>Data</span><span>{{ formatData(selected.data) }}</span></div>
             <div class="sheet-row"><span>Mese</span><span>{{state.months.find(m => m.id === selected.month_id)?.label
@@ -98,7 +108,7 @@ import { useRouter } from 'vue-router'
 import CatIcon from '../components/CatIcon.vue'
 import {
   state, loadMonths, loadTransactions,
-  deleteTransaction, fmtFull, categorieUscite, categorieEntrate
+  deleteTransaction, fmtFull, categorieUscite, categorieEntrate, sumByCurrency, sortByRecent
 } from '../lib/store.js'
 
 const router = useRouter()
@@ -128,14 +138,14 @@ const mesiDesc = computed(() => [...state.months].reverse())
 
 // Tutte le transazioni caricate (tutti i mesi)
 const tutteLeTransazioni = computed(() =>
-  [...state.transactions].sort((a, b) => new Date(b.data) - new Date(a.data))
+  [...state.transactions].sort(sortByRecent)
 )
 
 // Sorgente dati in base allo scopo
 const txMeseFiltrato = computed(() =>
   state.transactions
     .filter(t => t.month_id === filtroMeseId.value)
-    .sort((a, b) => new Date(b.data) - new Date(a.data))
+    .sort(sortByRecent)
 )
 const sorgente = computed(() => scopoTutti.value || search.value ? tutteLeTransazioni.value : txMeseFiltrato.value)
 
@@ -164,7 +174,11 @@ const transazioniGruppate = computed(() => {
   return gruppi
 })
 
-const totale = computed(() => transazioniFiltrate.value.reduce((s, t) => s + Number(t.importo), 0))
+// Totali separati per valuta (nessuna somma tra valute diverse).
+const totali = computed(() => {
+  const byCur = sumByCurrency(transazioniFiltrate.value)
+  return Object.entries(byCur).map(([code, value]) => ({ code, value }))
+})
 
 function formatData(d) {
   return new Date(d).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: '2-digit' })
@@ -476,11 +490,28 @@ onMounted(async () => {
   color: var(--text2);
 }
 
+.tx-amount-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 1px;
+}
 .tx-amount {
   font-size: 0.95rem;
-  flex-shrink: 0;
   font-family: 'DM Mono', monospace;
   font-weight: 500;
+}
+.tx-orig {
+  font-size: 0.7rem;
+  color: var(--text2);
+  font-family: 'DM Mono', monospace;
+}
+.summary-totals {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .empty-state {

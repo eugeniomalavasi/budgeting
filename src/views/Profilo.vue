@@ -85,6 +85,18 @@
         <p class="hint">La persona deve avere un account con questa email; vedrà la richiesta nel suo profilo.</p>
       </div>
 
+      <!-- Valuta predefinita del gruppo -->
+      <div class="card sect">
+        <label class="sect-label">Valuta predefinita</label>
+        <select v-model="currency" class="inp" @change="salvaCurrency">
+          <option v-for="c in CURRENCIES" :key="c.code" :value="c.code">
+            {{ c.symbol }} · {{ c.name }} ({{ c.code }})
+          </option>
+        </select>
+        <p v-if="currencyMsg" class="msg ok">{{ currencyMsg }}</p>
+        <p class="hint">Vale per tutto il gruppo. I nuovi movimenti useranno questa valuta; quelli già registrati restano invariati.</p>
+      </div>
+
       <!-- Categorie -->
       <router-link to="/categorie" class="card sect nav-link">
         <span class="nav-link-text">🏷️ Gestisci categorie</span>
@@ -128,16 +140,35 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   state, updateProfileName, updatePassword, signOut, switchGroup, createGroup, deleteGroup,
-  loadSentInvitations, createInvitation, cancelInvitation, respondInvitation,
+  loadSentInvitations, createInvitation, cancelInvitation, respondInvitation, updateHouseholdCurrency,
 } from '../lib/store.js'
+import { CURRENCIES } from '../lib/currencies.js'
 
 const router = useRouter()
 
 const name = ref(state.profile?.name || '')
+
+// Valuta predefinita del gruppo
+const currency = ref(state.householdCurrency || 'EUR')
+const currencyMsg = ref('')
+// Mantieni il select allineato se cambia il gruppo attivo.
+watch(() => state.householdCurrency, (c) => { if (c) currency.value = c })
+
+async function salvaCurrency() {
+  currencyMsg.value = ''
+  try {
+    await updateHouseholdCurrency(currency.value)
+    currencyMsg.value = 'Valuta aggiornata.'
+    setTimeout(() => (currencyMsg.value = ''), 2500)
+  } catch (e) {
+    currency.value = state.householdCurrency || 'EUR'
+    currencyMsg.value = ''
+  }
+}
 
 // Gruppi
 const newGroupName = ref('')

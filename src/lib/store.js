@@ -1,9 +1,13 @@
 import { reactive, computed } from 'vue'
 import { supabase } from './supabase.js'
+import { currencyDecimals } from './currencies.js'
 
 export const state = reactive({
   user: null,
   profile: null,
+  householdCurrency: 'EUR', // valuta predefinita del gruppo attivo (households.currency)
+  exchangeRates: {},        // { code: rate } su base EUR (unità di code per 1 EUR)
+  ratesUpdatedAt: null,
   otherProfile: null,   // deprecato: "l'altro" quando il gruppo ha esattamente 2 membri
   members: [],          // membri del gruppo attivo: [{ id, name }]
   groups: [],           // gruppi dell'utente: [{ household_id, name, role }]
@@ -35,10 +39,17 @@ export const currentMonth = computed(() =>
   state.months.find(m => m.id === state.currentMonthId) || state.months[state.months.length - 1]
 )
 
+// Ordina per data (giorno) e, a parità, per istante di inserimento (created_at):
+// così l'ultimo movimento inserito compare sempre per primo.
+export function sortByRecent(a, b) {
+  return (new Date(b.data) - new Date(a.data)) ||
+    (new Date(b.created_at || 0) - new Date(a.created_at || 0))
+}
+
 export const currentTransactions = computed(() =>
   state.transactions
     .filter(t => t.month_id === state.currentMonthId)
-    .sort((a, b) => new Date(b.data) - new Date(a.data))
+    .sort(sortByRecent)
 )
 
 // Saldo netto dell'utente corrente verso il gruppo.
@@ -126,11 +137,74 @@ export function catIconKey(name) {
   return state.categories.find(c => c.name === name)?.icon || null
 }
 
-export function fmt(v) {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v || 0)
+// Valuta di riferimento per la formattazione quando non specificata: quella di famiglia.
+function defaultCurrency() {
+  return state.householdCurrency || 'EUR'
 }
-export function fmtFull(v) {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v || 0)
+
+// fmt: importo "arrotondato" (senza decimali per valute con decimali, come prima per EUR).
+export function fmt(v, currency) {
+  const code = currency || defaultCurrency()
+  return new Intl.NumberFormat('it-IT', {
+    style: 'currency', currency: code, maximumFractionDigits: 0,
+  }).format(v || 0)
+}
+// fmtFull: importo con i decimali propri della valuta (0 per JPY/UZS/…).
+export function fmtFull(v, currency) {
+  const code = currency || defaultCurrency()
+  const dec = currencyDecimals(code)
+  return new Intl.NumberFormat('it-IT', {
+    style: 'currency', currency: code,
+    minimumFractionDigits: dec, maximumFractionDigits: dec,
+  }).format(v || 0)
+}
+
+// ——— CAMBI VALUTA ———
+// Carica i tassi (base EUR) dalla tabella exchange_rates in state.exchangeRates.
+export async function loadExchangeRates() {
+  const { data, error } = await supabase
+    .from('exchange_rates').select('code, rate, updated_at').eq('base', 'EUR')
+  if (error) { console.warn('Cambi non caricati:', error.message); return }
+  const map = {}
+  let latest = null
+  ;(data || []).forEach(r => {
+    map[r.code] = Number(r.rate)
+    if (!latest || new Date(r.updated_at) > new Date(latest)) latest = r.updated_at
+  })
+  map.EUR = 1
+  state.exchangeRates = map
+  state.ratesUpdatedAt = latest
+}
+
+// Converte `amount` da valuta `from` a valuta `to` usando EUR come pivot.
+// Ritorna null se manca un tasso necessario (la UI blocca il salvataggio).
+export function convert(amount, from, to) {
+  if (from === to) return amount
+  const rates = state.exchangeRates
+  const rFrom = from === 'EUR' ? 1 : rates[from]
+  const rTo = to === 'EUR' ? 1 : rates[to]
+  if (!rFrom || !rTo) return null
+  return amount * (rTo / rFrom)
+}
+
+// Somma una lista di transazioni raggruppando per valuta: { EUR: n, USD: m }.
+// Ogni movimento contribuisce nella propria `valuta` (default EUR per i vecchi dati).
+export function sumByCurrency(list) {
+  const out = {}
+  ;(list || []).forEach(t => {
+    const code = t.valuta || 'EUR'
+    out[code] = (out[code] || 0) + Number(t.importo || 0)
+  })
+  return out
+}
+
+// Aggiorna la valuta predefinita del gruppo attivo (households.currency).
+export async function updateHouseholdCurrency(code) {
+  if (!state.activeGroupId) return
+  const { error } = await supabase
+    .from('households').update({ currency: code }).eq('id', state.activeGroupId)
+  if (error) throw error
+  state.householdCurrency = code
 }
 
 // ——— AUTH ———
@@ -266,10 +340,23 @@ export async function addCategory({ name, kind, emoji, color, icon }) {
 }
 
 export async function updateCategory(id, updates) {
+  const oldName = state.categories.find(c => c.id === id)?.name
   const { data, error } = await supabase.from('categories').update(updates).eq('id', id).select()
   if (error) throw error
   const idx = state.categories.findIndex(c => c.id === id)
   if (idx !== -1 && data?.[0]) state.categories[idx] = data[0]
+
+  // Se il nome è cambiato, propaga il nuovo nome ai movimenti già registrati:
+  // i movimenti memorizzano la categoria come testo, quindi senza questo passaggio
+  // il filtro/raggruppamento per categoria "perderebbe" quei movimenti.
+  const newName = updates.name
+  if (newName && oldName && newName !== oldName) {
+    const { error: e2 } = await supabase
+      .from('transactions').update({ categoria: newName })
+      .eq('household_id', state.activeGroupId).eq('categoria', oldName)
+    if (e2) throw e2
+    state.transactions.forEach(t => { if (t.categoria === oldName) t.categoria = newName })
+  }
 }
 
 // Riordina le categorie di un gruppo (uscita/entrata) secondo l'ordine degli id
@@ -441,9 +528,16 @@ async function loadProfile() {
   // Compat 2 persone: "l'altro" ha senso solo se il gruppo è una coppia
   const others = (data || []).filter(p => p.id !== state.user.id)
   state.otherProfile = others.length === 1 ? others[0] : null
+  // Valuta predefinita del gruppo attivo
+  if (state.activeGroupId) {
+    const { data: hh } = await supabase
+      .from('households').select('currency').eq('id', state.activeGroupId).maybeSingle()
+    state.householdCurrency = hh?.currency || 'EUR'
+  }
   await loadGroups()
   await loadInvitations()
   await loadCategories()
+  await loadExchangeRates()
   await loadGroupBalances()
 }
 
@@ -547,6 +641,7 @@ export async function loadTransactions(monthId) {
     .eq('month_id', monthId)
     .is('deleted_at', null)
     .order('data', { ascending: false })
+    .order('created_at', { ascending: false })
   if (error) throw error
   state.transactions = [
     ...state.transactions.filter(t => t.month_id !== monthId),
@@ -565,6 +660,10 @@ export async function addTransaction(tx) {
       descrizione: tx.descrizione,
       categoria: tx.categoria,
       created_by: state.user?.id,
+      valuta: tx.valuta || state.householdCurrency || 'EUR',
+      importo_originale: tx.importo_originale ?? null,
+      valuta_originale: tx.valuta_originale ?? null,
+      tasso_usato: tx.tasso_usato ?? null,
     })
     .select()
   if (error) throw error
@@ -585,6 +684,10 @@ export async function updateTransaction(id, updates) {
       descrizione: updates.descrizione,
       categoria: updates.categoria,
       month_id: updates.month_id,
+      valuta: updates.valuta,
+      importo_originale: updates.importo_originale ?? null,
+      valuta_originale: updates.valuta_originale ?? null,
+      tasso_usato: updates.tasso_usato ?? null,
     })
     .eq('id', id)
     .select()

@@ -17,10 +17,16 @@
           <span class="amount-sign">{{ tipo === 'uscita' ? '−' : '+' }}</span>
           <input v-model="importoRaw" @input="onImporto" class="amount-input" type="text"
             inputmode="decimal" placeholder="0" />
-          <span class="amount-eur">€</span>
+          <button type="button" class="amount-cur" @click="pickerOpen = true">{{ valutaInputSymbol }}</button>
         </label>
-        <p class="amount-hint">Tocca per digitare l'importo</p>
+        <p v-if="valutaInput !== householdCurrency" class="amount-conv">
+          <template v-if="importoConvertito !== null">≈ {{ fmtFull(importoConvertito, householdCurrency) }}</template>
+          <template v-else>⚠️ Cambio {{ valutaInput }} non disponibile</template>
+        </p>
+        <p v-else class="amount-hint">Tocca {{ valutaInputSymbol }} per cambiare valuta</p>
       </div>
+
+      <CurrencyPicker v-model="valutaInput" :open="pickerOpen" @close="pickerOpen = false" />
 
       <!-- Descrizione -->
       <div class="desc-field">
@@ -99,7 +105,7 @@
               v-model="customAmounts[m.id]" placeholder="0" />
           </div>
           <div class="custom-sum" :class="{ bad: !customValid }">
-            Somma quote: {{ fmtFull(customSum) }} / {{ fmtFull(importoNum) }}
+            Somma quote: {{ fmtFull(customSum, householdCurrency) }} / {{ fmtFull(importoSplit, householdCurrency) }}
           </div>
         </div>
       </div>
@@ -124,9 +130,13 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   state, addTransaction, updateTransaction, deleteTransaction, addSharedExpense, updateSharedExpense, deleteSharedExpense,
-  loadMonths, loadSharedExpenses, loadCategories, categorieUscite, categorieEntrate, fmtFull
+  loadMonths, loadSharedExpenses, loadCategories, categorieUscite, categorieEntrate, fmtFull, convert
 } from '../lib/store.js'
+import { currencySymbol } from '../lib/currencies.js'
 import CatIcon from '../components/CatIcon.vue'
+import CurrencyPicker from '../components/CurrencyPicker.vue'
+
+const LAST_CURRENCY_KEY = 'lastCurrency'
 
 const route = useRoute()
 const router = useRouter()
@@ -137,6 +147,10 @@ const descrizione = ref('')
 const data = ref(new Date().toISOString().split('T')[0])
 const categoria = ref('')
 const meseId = ref(state.currentMonthId || '')
+// Valuta di input: ultima usata (ricordata) o valuta di famiglia.
+const householdCurrency = computed(() => state.householdCurrency || 'EUR')
+const valutaInput = ref(localStorage.getItem(LAST_CURRENCY_KEY) || householdCurrency.value)
+const pickerOpen = ref(false)
 const dividi = ref(false)
 const payer = ref(null)           // id del membro che ha pagato
 const splitEqual = ref(true)      // true = parti uguali, false = quote custom
@@ -157,6 +171,16 @@ watch(data, (newData) => {
 })
 
 const importoNum = computed(() => parseFloat(importoRaw.value) || 0)
+
+const valutaInputSymbol = computed(() => currencySymbol(valutaInput.value))
+// Tasso valutaInput → valuta household (quante unità household per 1 unità input).
+const tassoCorrente = computed(() => convert(1, valutaInput.value, householdCurrency.value))
+// Anteprima importo convertito nella valuta di famiglia (null se cambio mancante).
+const importoConvertito = computed(() => {
+  if (valutaInput.value === householdCurrency.value) return importoNum.value
+  const t = tassoCorrente.value
+  return t === null ? null : importoNum.value * t
+})
 
 // Categorie mostrate come chip: dipendono dal tipo di movimento selezionato.
 const chipCategorie = computed(() =>
@@ -188,9 +212,12 @@ function initSplitDefaults() {
   state.members.forEach(m => { participants[m.id] = true })
 }
 
+// Le quote della spesa condivisa sono nella valuta di famiglia (importo convertito).
+const importoSplit = computed(() => importoConvertito.value || 0)
+
 // Quote in "parti uguali" tra i partecipanti selezionati (resto sul primo).
 const equalShares = computed(() => {
-  const tot = importoNum.value
+  const tot = importoSplit.value
   const ids = state.members.filter(m => participants[m.id]).map(m => m.id)
   const out = {}
   if (!ids.length) return out
@@ -204,7 +231,7 @@ const equalShares = computed(() => {
 const customSum = computed(() =>
   state.members.reduce((s, m) => s + (Number(customAmounts[m.id]) || 0), 0)
 )
-const customValid = computed(() => Math.abs(customSum.value - importoNum.value) < 0.01)
+const customValid = computed(() => Math.abs(customSum.value - importoSplit.value) < 0.01)
 
 // Array [{ user_id, amount }] da salvare.
 function buildShares() {
@@ -253,6 +280,9 @@ async function salva() {
   if (!descrizione.value.trim()) { errore.value = 'Inserisci una descrizione.'; return }
   if (!categoria.value) { errore.value = 'Seleziona una categoria.'; return }
   if (!meseId.value) { errore.value = 'Seleziona il mese.'; return }
+  if (importoConvertito.value === null) {
+    errore.value = `Cambio ${valutaInput.value} non disponibile. Riprova più tardi o scegli un'altra valuta.`; return
+  }
 
   if (dividi.value && tipo.value === 'uscita' && state.members.length >= 2) {
     if (buildShares().length === 0) { errore.value = 'Seleziona almeno un partecipante.'; return }
@@ -270,14 +300,24 @@ async function salva() {
 }
 
 async function salvaInterno() {
-  const importo = importoNum.value
+  const isForeign = valutaInput.value !== householdCurrency.value
+  // importo canonico salvato = convertito nella valuta di famiglia (2 decimali).
+  const importo = Math.round((importoConvertito.value || 0) * 100) / 100
   const importoFinal = tipo.value === 'uscita' ? -importo : importo
+  // Campi "originale": valorizzati solo se la valuta digitata è diversa da quella di famiglia.
+  const meta = {
+    valuta: householdCurrency.value,
+    importo_originale: isForeign ? importoNum.value : null,
+    valuta_originale: isForeign ? valutaInput.value : null,
+    tasso_usato: isForeign ? tassoCorrente.value : null,
+  }
 
   if (editMode.value) {
     await updateTransaction(editId.value, {
       data: data.value, importo: importoFinal,
       descrizione: descrizione.value.trim(),
       categoria: categoria.value, month_id: meseId.value,
+      ...meta,
     })
     // Aggiorna o crea shared expense
     if (dividi.value && tipo.value === 'uscita' && state.members.length >= 2) {
@@ -303,6 +343,7 @@ async function salvaInterno() {
     const tx = await addTransaction({
       month_id: meseId.value, data: data.value,
       importo: importoFinal, descrizione: descrizione.value.trim(), categoria: categoria.value,
+      ...meta,
     })
     if (dividi.value && state.members.length >= 2) {
       await addSharedExpense({
@@ -312,6 +353,9 @@ async function salvaInterno() {
       })
     }
   }
+
+  // Ricorda la valuta di input per i prossimi inserimenti.
+  localStorage.setItem(LAST_CURRENCY_KEY, valutaInput.value)
 
   toastVisible.value = true
   setTimeout(() => { toastVisible.value = false; if (editMode.value) router.back() }, 1200)
@@ -338,7 +382,15 @@ onMounted(async () => {
     if (tx) {
       editMode.value = true; editId.value = tx.id
       tipo.value = Number(tx.importo) < 0 ? 'uscita' : 'entrata'
-      importoRaw.value = normalizzaImporto(tx.importo)
+      // Se il movimento fu inserito in valuta estera, ripristina valuta e importo digitati;
+      // altrimenti mostra l'importo canonico nella valuta del movimento.
+      if (tx.valuta_originale) {
+        valutaInput.value = tx.valuta_originale
+        importoRaw.value = normalizzaImporto(tx.importo_originale ?? tx.importo)
+      } else {
+        valutaInput.value = tx.valuta || householdCurrency.value
+        importoRaw.value = normalizzaImporto(tx.importo)
+      }
       descrizione.value = tx.descrizione
       data.value = normalizzaData(tx.data)
       categoria.value = tx.categoria; meseId.value = tx.month_id
@@ -459,12 +511,23 @@ onMounted(async () => {
 
 .amount-input::placeholder { color: var(--text2); opacity: 0.5; }
 
-.amount-eur {
+.amount-cur {
+  align-self: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px var(--accent-glow);
+  color: #f5ead8;
+  cursor: pointer;
   font-family: 'DM Mono', monospace;
-  font-size: 1.6rem;
-  font-weight: 500;
-  color: var(--text2);
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1;
+  min-width: 2.6rem;
+  padding: 0.5rem 0.7rem;
+  transition: transform 0.15s;
 }
+.amount-cur:active { transform: scale(0.94); }
 
 .amount-hint {
   font-size: 0.78rem;

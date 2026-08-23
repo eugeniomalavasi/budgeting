@@ -89,7 +89,10 @@
               <span class="tx-desc">{{ tx.descrizione }}</span>
               <span class="tx-meta">{{ tx.categoria }} · {{ formatData(tx.data) }}</span>
             </div>
-            <span class="tx-amount amount" :class="tx.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(tx.importo) }}</span>
+            <span class="tx-amount-wrap">
+              <span class="tx-amount amount" :class="tx.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(tx.importo, tx.valuta) }}</span>
+              <span v-if="tx.valuta_originale && tx.valuta_originale !== tx.valuta" class="tx-orig">{{ fmtFull(tx.importo_originale, tx.valuta_originale) }}</span>
+            </span>
           </div>
           <router-link to="/transazioni" class="tx-see-all">Vedi tutti →</router-link>
         </div>
@@ -120,9 +123,12 @@
           <div class="sheet-handle"></div>
           <CatIcon :categoria="selected.categoria" style="width:56px;height:56px;border-radius:16px" />
           <p class="sheet-desc">{{ selected.descrizione }}</p>
-          <p class="sheet-amount amount" :class="selected.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(selected.importo) }}
+          <p class="sheet-amount amount" :class="selected.importo < 0 ? 'neg' : 'pos'">{{ fmtFull(selected.importo, selected.valuta) }}
           </p>
           <div class="sheet-details">
+            <div v-if="selected.valuta_originale && selected.valuta_originale !== selected.valuta" class="sheet-row">
+              <span>Importo originale</span><span>{{ fmtFull(selected.importo_originale, selected.valuta_originale) }}</span>
+            </div>
             <div class="sheet-row"><span>Categoria</span><span>{{ selected.categoria }}</span></div>
             <div class="sheet-row"><span>Data</span><span>{{ formatData(selected.data) }}</span></div>
             <div class="sheet-row"><span>Mese</span><span>{{state.months.find(m => m.id === selected.month_id)?.label
@@ -572,9 +578,20 @@ watch(() => state.currentMonthId, async (newId) => {
   color: var(--text2);
 }
 
+.tx-amount-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 1px;
+}
 .tx-amount {
   font-size: 0.92rem;
-  flex-shrink: 0;
+}
+.tx-orig {
+  font-size: 0.68rem;
+  color: var(--text2);
+  font-family: 'DM Mono', monospace;
 }
 
 .tx-see-all {
