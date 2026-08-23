@@ -707,6 +707,9 @@ export async function deleteTransaction(id) {
     .from('transactions').update({ deleted_at: new Date().toISOString() }).eq('id', id)
   if (error) throw error
   state.transactions = state.transactions.filter(t => t.id !== id)
+  // Se il movimento ha una spesa condivisa collegata, eliminala anche dalla Divisione.
+  const exp = state.sharedExpenses.find(e => e.transaction_id === id)
+  if (exp) await deleteSharedExpense(id)
   await _updateMonthTotals(tx.month_id)
 }
 
