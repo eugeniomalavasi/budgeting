@@ -103,6 +103,15 @@
         <span class="nav-link-arrow">›</span>
       </router-link>
 
+      <!-- Spese ricorrenti -->
+      <router-link to="/ricorrenti" class="card sect nav-link">
+        <span class="nav-link-text">
+          🔁 Spese ricorrenti
+          <span v-if="recurringAlerts.length" class="nav-link-badge">{{ recurringAlerts.length }}</span>
+        </span>
+        <span class="nav-link-arrow">›</span>
+      </router-link>
+
       <!-- Nome -->
       <div class="card sect">
         <label class="sect-label">Nome visualizzato</label>
@@ -145,6 +154,7 @@ import { useRouter } from 'vue-router'
 import {
   state, updateProfileName, updatePassword, signOut, switchGroup, createGroup, deleteGroup,
   loadSentInvitations, createInvitation, cancelInvitation, respondInvitation, updateHouseholdCurrency,
+  loadRecurringRules, recurringAlerts,
 } from '../lib/store.js'
 import { CURRENCIES } from '../lib/currencies.js'
 
@@ -243,7 +253,7 @@ async function rispondi(id, accept) {
   } catch (e) { /* noop */ }
 }
 
-onMounted(() => { loadSentInvitations() })
+onMounted(() => { loadSentInvitations(); loadRecurringRules() })
 
 async function scegliGruppo(householdId) {
   if (householdId === state.activeGroupId) return
@@ -457,7 +467,12 @@ async function logout() {
   display: flex; flex-direction: row; align-items: center; justify-content: space-between;
   text-decoration: none; color: var(--text); cursor: pointer;
 }
-.nav-link-text { font-size: 0.95rem; font-weight: 600; }
+.nav-link-text { font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+.nav-link-badge {
+  background: var(--red); color: var(--bg); font-size: 0.7rem; font-weight: 700;
+  min-width: 18px; height: 18px; border-radius: 100px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
 .nav-link-arrow { font-size: 1.4rem; color: var(--text2); }
 
 .msg { font-size: 0.82rem; }

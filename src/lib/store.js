@@ -19,6 +19,7 @@ export const state = reactive({
   months: [],
   transactions: [],
   sharedExpenses: [],   // ogni spesa ha .shares = [{ user_id, amount }]
+  recurringRules: [],   // regole spese ricorrenti; ognuna ha .shares = [{ user_id, weight }]
   currentMonthId: null,
   loading: false,
 })
@@ -289,7 +290,7 @@ export async function signOut() {
     members: [], groups: [], activeGroupId: null,
     invitations: [], sentInvitations: [],
     groupBalances: [], categories: [],
-    months: [], transactions: [], sharedExpenses: [],
+    months: [], transactions: [], sharedExpenses: [], recurringRules: [],
   })
 }
 
@@ -820,3 +821,104 @@ export async function deleteSharedExpense(transactionId) {
   if (error) throw error
   state.sharedExpenses = state.sharedExpenses.filter(e => e.id !== exp.id)
 }
+
+// ——— SPESE RICORRENTI ———
+// Regole che generano automaticamente un movimento ogni mese (lato server, via
+// cron). Ogni regola porta con sé le quote-template in `shares` = [{ user_id, weight }].
+export async function loadRecurringRules() {
+  const { data, error } = await supabase
+    .from('recurring_rules')
+    .select('*, shares:recurring_rule_shares(user_id, weight)')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  state.recurringRules = (data || []).map(r => ({ ...r, shares: r.shares || [] }))
+}
+
+// shares: [{ user_id, weight }] (solo se is_split). Ritorna la regola creata.
+export async function addRecurringRule(rule, shares) {
+  const { data, error } = await supabase
+    .from('recurring_rules')
+    .insert({
+      created_by: state.user?.id,
+      tipo: rule.tipo,
+      descrizione: rule.descrizione,
+      categoria: rule.categoria,
+      importo_originale: rule.importo_originale,
+      valuta_originale: rule.valuta_originale,
+      day_of_month: rule.day_of_month,
+      start_month: rule.start_month,
+      total_installments: rule.total_installments ?? null,
+      end_month: rule.end_month ?? null,
+      is_split: !!rule.is_split,
+      split_type: rule.split_type || 'equal',
+      paid_by: rule.paid_by ?? null,
+    })
+    .select()
+  if (error) throw error
+  const created = data[0]
+  const rows = (shares || [])
+    .filter(s => s.user_id && Number(s.weight) > 0)
+    .map(s => ({ rule_id: created.id, user_id: s.user_id, weight: Number(s.weight) }))
+  if (rows.length) {
+    const { error: e2 } = await supabase.from('recurring_rule_shares').insert(rows)
+    if (e2) throw e2
+  }
+  created.shares = rows.map(r => ({ user_id: r.user_id, weight: r.weight }))
+  state.recurringRules.unshift(created)
+  return created
+}
+
+// Aggiorna una regola e, se passate, rimpiazza le quote-template.
+export async function updateRecurringRule(id, updates, shares) {
+  const fields = {}
+  ;['tipo', 'descrizione', 'categoria', 'importo_originale', 'valuta_originale',
+    'day_of_month', 'start_month', 'total_installments', 'end_month',
+    'is_split', 'split_type', 'paid_by', 'active'].forEach(k => {
+      if (updates[k] !== undefined) fields[k] = updates[k]
+    })
+  if (Object.keys(fields).length) {
+    const { error } = await supabase.from('recurring_rules').update(fields).eq('id', id)
+    if (error) throw error
+  }
+  if (shares) {
+    await supabase.from('recurring_rule_shares').delete().eq('rule_id', id)
+    const rows = shares
+      .filter(s => s.user_id && Number(s.weight) > 0)
+      .map(s => ({ rule_id: id, user_id: s.user_id, weight: Number(s.weight) }))
+    if (rows.length) {
+      const { error: e2 } = await supabase.from('recurring_rule_shares').insert(rows)
+      if (e2) throw e2
+    }
+  }
+  const rule = state.recurringRules.find(r => r.id === id)
+  if (rule) {
+    Object.assign(rule, fields)
+    if (shares) rule.shares = shares
+      .filter(s => s.user_id && Number(s.weight) > 0)
+      .map(s => ({ user_id: s.user_id, weight: Number(s.weight) }))
+  }
+}
+
+// Soft delete: la regola smette di generare movimenti futuri; quelli già
+// generati nei mesi passati restano invariati.
+export async function deleteRecurringRule(id) {
+  const { error } = await supabase
+    .from('recurring_rules').update({ deleted_at: new Date().toISOString() }).eq('id', id)
+  if (error) throw error
+  state.recurringRules = state.recurringRules.filter(r => r.id !== id)
+}
+
+// Rate rimanenti di una regola (null = illimitata / basata su data di fine).
+export function remainingInstallments(rule) {
+  if (rule.total_installments == null) return null
+  return Math.max(0, rule.total_installments - (rule.generated_count || 0))
+}
+
+// Regole "in scadenza": all'ultima rata o già terminate (per il badge/notifica).
+export const recurringAlerts = computed(() =>
+  state.recurringRules.filter(r => {
+    const rem = remainingInstallments(r)
+    return rem !== null && rem <= 1
+  })
+)

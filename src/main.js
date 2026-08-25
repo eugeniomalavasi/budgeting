@@ -10,6 +10,8 @@ import ResetPassword from './views/ResetPassword.vue'
 import Profilo from './views/Profilo.vue'
 import Categorie from './views/Categorie.vue'
 import Dividi from './views/Dividi.vue'
+import Ricorrenti from './views/Ricorrenti.vue'
+import RicorrenteForm from './views/RicorrenteForm.vue'
 import { state, authFlow, initAuth, loadMonths, loadTransactions, loadSharedExpenses } from './lib/store.js'
 
 const router = createRouter({
@@ -24,6 +26,8 @@ const router = createRouter({
     { path: '/stats', component: Stats, meta: { auth: true } },
     { path: '/profilo', component: Profilo, meta: { auth: true } },
     { path: '/categorie', component: Categorie, meta: { auth: true } },
+    { path: '/ricorrenti', component: Ricorrenti, meta: { auth: true } },
+    { path: '/ricorrenti/:id', component: RicorrenteForm, meta: { auth: true } },
   ]
 })
 
