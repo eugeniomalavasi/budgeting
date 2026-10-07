@@ -500,11 +500,23 @@ export async function initAuth() {
   const { data: { session } } = await supabase.auth.getSession()
   state.user = session?.user || null
   if (state.user) await loadProfile()
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  // ATTENZIONE: questa callback NON deve essere async né fare await di chiamate
+  // Supabase. supabase-js la esegue mentre tiene il lock interno dell'auth:
+  // un `await supabase.from(...)` qui dentro attende lo stesso lock → deadlock,
+  // e da lì ogni richiesta (salvataggi inclusi) resta appesa fino al reload.
+  // Succede tipicamente al rientro dell'app dal background (TOKEN_REFRESHED /
+  // SIGNED_IN emessi al refresh del token). Rimandiamo il lavoro con setTimeout.
+  supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') authFlow.recovery = true
+    const prevId = state.user?.id
     state.user = session?.user || null
-    if (state.user) await loadProfile()
-    else Object.assign(state, { profile: null, otherProfile: null })
+    if (!state.user) {
+      Object.assign(state, { profile: null, otherProfile: null })
+      return
+    }
+    // Il refresh del token non cambia utente: niente da ricaricare.
+    if (event === 'TOKEN_REFRESHED' || (prevId === state.user.id && state.profile)) return
+    setTimeout(() => { loadProfile().catch(console.error) }, 0)
   })
 }
 
@@ -676,7 +688,8 @@ export async function addTransaction(tx) {
 
 export async function updateTransaction(id, updates) {
   const old = state.transactions.find(t => t.id === id)
-  if (!old) return
+  // Prima usciva in silenzio e l'UI mostrava "salvato" senza aver salvato nulla.
+  if (!old) throw new Error('Movimento non trovato in memoria, ricarica la lista e riprova.')
   const { data, error } = await supabase
     .from('transactions')
     .update({
@@ -693,6 +706,8 @@ export async function updateTransaction(id, updates) {
     .eq('id', id)
     .select()
   if (error) throw error
+  // 0 righe = RLS ha bloccato l'update (nessun errore restituito da PostgREST).
+  if (!data?.length) throw new Error('Modifica non salvata (permessi o sessione scaduta).')
   const updated = data[0]
   await _updateMonthTotals(old.month_id)
   await _updateMonthTotals(updates.month_id)
