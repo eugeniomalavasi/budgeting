@@ -129,6 +129,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
+  getTransaction,
   state, addTransaction, updateTransaction, deleteTransaction, addSharedExpense, updateSharedExpense, deleteSharedExpense,
   loadMonths, loadSharedExpenses, loadCategories, categorieUscite, categorieEntrate, fmtFull, convert
 } from '../lib/store.js'
@@ -379,6 +380,7 @@ onMounted(async () => {
   const txId = route.query.edit
   if (txId) {
     let tx = state.transactions.find(t => t.id === txId)
+    if (!tx) tx = await getTransaction(txId)
     if (tx) {
       editMode.value = true; editId.value = tx.id
       tipo.value = Number(tx.importo) < 0 ? 'uscita' : 'entrata'

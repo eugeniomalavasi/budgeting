@@ -662,6 +662,15 @@ export async function loadTransactions(monthId) {
   ]
 }
 
+// Carica un singolo movimento per id (es. aperto da Dividi, quando il mese non è in memoria)
+export async function getTransaction(id) {
+  const { data, error } = await supabase
+    .from('transactions').select('*').eq('id', id).is('deleted_at', null).maybeSingle()
+  if (error) throw error
+  if (data && !state.transactions.some(t => t.id === data.id)) state.transactions.push(data)
+  return data
+}
+
 export async function addTransaction(tx) {
   // Usa .select() senza .single() per evitare PGRST116 con RLS
   const { data, error } = await supabase
